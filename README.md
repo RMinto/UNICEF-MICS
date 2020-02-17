@@ -8,3 +8,5 @@ Github page for the MICS R analysis project. All files / work can still be trans
 * Version Controlled 
 * Primary platform for all engineering / software collaboration 
 * Easy collaboration, smooth transition into e.g. "UNICEF MICS R Package" etc.
+
+
