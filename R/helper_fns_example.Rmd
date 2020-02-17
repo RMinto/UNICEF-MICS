@@ -26,11 +26,29 @@ __Any__ analyst at Unicef that uses R and would find some utility in wrapping up
 
 ```{r}
 
-# source our helper function from our github page
+source_https <- function(u, unlink.tmp.certs = FALSE) {
+  # load package
+  require(RCurl)
 
-script <- source_url("https://github.com/RMinto/UNICEF-MICS/blob/master/R/fake_helper_fun_example.R")
+  # read script lines from website using a security certificate
+  if(!file.exists("cacert.pem")) download.file(url="http://curl.haxx.se/ca/cacert.pem", destfile = "cacert.pem")
+  script <- getURL(u, followlocation = TRUE, cainfo = "cacert.pem")
+  if(unlink.tmp.certs) unlink("cacert.pem")
 
-eval(parse(text = script))
+  # parase lines and evealuate in the global environement
+  eval(parse(text = script), envir= .GlobalEnv)
+}
+
+
+
+source_https("https://github.com/RMinto/UNICEF-MICS/raw/master/R/fake_helper_fun_example.R")
+source_https("https://github.com/RMinto/UNICEF-MICS/raw/master/R/fake_helper_fun_example.R", unlink.tmp.certs = TRUE)
+
+```
+
+```{r}
+
+devtools::source_url("https://github.com/RMinto/UNICEF-MICS/raw/master/R/fake_helper_fun_example.R?raw=TRUE")
 
 ```
 
