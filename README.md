@@ -1,6 +1,6 @@
 # Project Page - MICS R Consulting
 
----
+
 Github page for the MICS R analysis project. All files / work can still be transferred to OneDrive or vice a versa, but some benefits to using this repository are: 
 
 * Central code repo with full transparency and controlled access (repo is private)
