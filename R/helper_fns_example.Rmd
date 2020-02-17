@@ -1,0 +1,35 @@
+---
+title: "test"
+author: "Reid Minto"
+date: "2/17/2020"
+output: html_document
+---
+
+# Load libraries and Import data 
+
+```{r, warning = F, message = F}
+
+library(tidyverse); library(lubridate);
+library(survey); library(RCurl)
+
+
+df <- mtcars
+
+```
+
+
+Suppose we're running through a routine or analysis and we want to apply some calculation or function to our dataset `df` , and what we want to do is fairly routine so we have wrapped it up into a custom function that we apply to our unicef routines systematically....
+
+__Any__ analyst at Unicef that uses R and would find some utility in wrapping up their frequent calculations / tasks etc. into a helper function could make use of sourcing the functions from our github page, e.g. for simplicity suppose I just want to see how many NAs / nulls are in every column for a dataset with 300 columns for example. 
+
+
+
+```{r}
+
+# source our helper function from our github page
+
+
+source("https://raw.github.com/rminto/Blog-Reference-Functions/master/R/bingSearchXScraper/bingSearchXScraper.R")
+
+```
+
