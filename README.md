@@ -10,3 +10,7 @@ Github page for the MICS R analysis project. All files / work can still be trans
 * Easy collaboration, smooth transition into e.g. "UNICEF MICS R Package" etc.
 
 
+---
+
+## Meeting 2/17 
+
