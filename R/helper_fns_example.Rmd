@@ -10,7 +10,7 @@ output: html_document
 ```{r, warning = F, message = F}
 
 library(tidyverse); library(lubridate);
-library(survey); library(RCurl)
+library(survey); library(RCurl); library(httr)
 
 
 df <- mtcars
@@ -28,8 +28,9 @@ __Any__ analyst at Unicef that uses R and would find some utility in wrapping up
 
 # source our helper function from our github page
 
+script <- source_url("https://github.com/RMinto/UNICEF-MICS/blob/master/R/fake_helper_fun_example.R")
 
-source("https://raw.github.com/rminto/Blog-Reference-Functions/master/R/bingSearchXScraper/bingSearchXScraper.R")
+eval(parse(text = script))
 
 ```
 
