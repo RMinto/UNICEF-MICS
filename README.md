@@ -12,5 +12,5 @@ Github page for the MICS R analysis project. All files / work can still be trans
 
 ---
 
-## Meeting 2/17 
+## Meeting Date xy
 
