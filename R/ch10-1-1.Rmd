@@ -1,0 +1,23 @@
+---
+title: "Ch10_1_1"
+author: "Reid Minto"
+date: "March 25, 2020"
+output: html_document
+---
+
+```{r}
+
+library(tidyverse); library(haven); library(lubridate)
+
+```
+ git config --global user.email "you@example.com"
+  git config --global user.name "Your Name"
+
+```{r}
+
+```
+
+```{r}
+
+```
+
