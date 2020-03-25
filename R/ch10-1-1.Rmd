@@ -7,17 +7,48 @@ output: html_document
 
 ```{r}
 
-library(tidyverse); library(haven); library(lubridate)
+library(tidyverse); library(haven); library(lubridate);
+library(Hmisc)
 
 ```
- git config --global user.email "you@example.com"
-  git config --global user.name "Your Name"
+ 
+  
 
 ```{r}
 
+hh <- read_sav("../Data/Tunisia_hh.sav")
+
+
+
 ```
+
+Filter only cases where hh interview = 1, create a variable `hhweightHH48` by multiplying 
+`HH48` and `hhweight`, number of hh members by sample weight
 
 ```{r}
 
+hh <- hh %>% filter(HH46 == 1) %>%
+  mutate(hhweightHH48 = HH48 * hhweight,
+         nhhmem = 1)
+
+hh <- hh %>%  
+  mutate(WS1 = ifelse(WS1 == 61, "Tanker Truck", WS1)) %>% 
+  mutate(WS1 = ifelse(WS1 == 71, "Cart with small tank", WS1)) %>% 
+  mutate(WS1 = ifelse(WS1 == 91, "Bottled water [A]", WS1)) %>% 
+  mutate(WS1 = ifelse(WS1 == 92, "Sachet water [A]", WS1)) %>% 
+  mutate(WS1 = ifelse(WS1 == 99, "Missing", WS1)) 
+        
+
+
+
+
+
+
+```
+
+```{r}
+var.labels = c(age="Age in Years", sex="Sex of the participant")
+
+label(data) = as.list(var.labels[match(names(data), names(var.labels))])
 ```
 

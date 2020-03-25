@@ -1,0 +1,15 @@
+---
+title: "ch10 1.2"
+author: "Reid Minto"
+date: "March 25, 2020"
+output: html_document
+---
+
+```{r}
+
+```
+
+```{r}
+
+```
+
