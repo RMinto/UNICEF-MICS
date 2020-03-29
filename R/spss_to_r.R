@@ -13,3 +13,12 @@ variable labels  total100 "Total".
 
 value labels total100 100 " ".
 # value labels ***need to verify*** appear to be conditional recoding of vectors
+
+
+do if any(WS1, 11, 12, 13, 14, 21, 31, 41, 51, 61, 71, 72,  91, 92) .
++ compute drinkingWater = 1 .
+else .
++ compute drinkingWater = 2 .
+end if.
+# create new variable that's just using ifelse for conditional evaluation 
+# based on values of var already in dataset

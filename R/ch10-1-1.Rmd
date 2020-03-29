@@ -5,14 +5,19 @@ date: "March 25, 2020"
 output: html_document
 ---
 
+# Load libraries
+
 ```{r}
 
 library(tidyverse); library(haven); library(lubridate);
-library(Hmisc)
+library(Hmisc);
+library(expss)
+
+library(tableone); library(sjPlot)
 
 ```
  
-  
+# Import data
 
 ```{r}
 
@@ -31,24 +36,156 @@ hh <- hh %>% filter(HH46 == 1) %>%
   mutate(hhweightHH48 = HH48 * hhweight,
          nhhmem = 1)
 
-hh <- hh %>%  
-  mutate(WS1 = ifelse(WS1 == 61, "Tanker Truck", WS1)) %>% 
-  mutate(WS1 = ifelse(WS1 == 71, "Cart with small tank", WS1)) %>% 
-  mutate(WS1 = ifelse(WS1 == 91, "Bottled water [A]", WS1)) %>% 
-  mutate(WS1 = ifelse(WS1 == 92, "Sachet water [A]", WS1)) %>% 
-  mutate(WS1 = ifelse(WS1 == 99, "Missing", WS1)) 
-        
+var_lab(hh$nhhmem) <- "Number of household members"
 
+# for value labels, either can create new variable which maps values to text
+hh <- hh %>%  
+  mutate(WS1_lab = WS1) %>% 
+  mutate(WS1_lab = ifelse(WS1_lab == 61, "Tanker Truck", WS1_lab)) %>% 
+  mutate(WS1_lab = ifelse(WS1_lab == 71, "Cart with small tank", WS1_lab)) %>% 
+  mutate(WS1_lab = ifelse(WS1_lab == 91, "Bottled water [A]", WS1_lab)) %>% 
+  mutate(WS1_lab = ifelse(WS1_lab == 92, "Sachet water [A]", WS1_lab)) %>% 
+  mutate(WS1_lab = ifelse(WS1_lab == 99, "Missing", WS1_lab)) 
+        
+# or create value labels
+
+val_lab(hh$WS1) = num_lab("
+  61 Tanker Truck 
+  71 Cart with small tank 
+  91 Bottled water [A] 
+  92 Sachet water [A] 
+  99 Missing"
+)
 
 
 
 
 
 ```
+
+Include `MICS6 - 10 - WS.sps` is called
 
 ```{r}
-var.labels = c(age="Age in Years", sex="Sex of the participant")
 
-label(data) = as.list(var.labels[match(names(data), names(var.labels))])
+
+
+hh <- hh %>% 
+  mutate(drinkingWater = ifelse(WS1 %in% c(11:14, 21, 31, 41, 51, 
+                                           61, 71, 72, 91, 92), 1, 2))
+
+var_lab(hh$nhhmem) <- "Number of household members"
+val_lab(hh$drinkingWater) = num_lab("
+  1 Improved sources
+  2 Unimproved sources"
+)
+
+
+hh <- hh %>% apply_labels(
+  drinkingWater = "Main Source of drinking water",
+  drinkingWater = c("Improved sources" = 1,
+                    "Unimproved sources" = 2))
+
+
+
+hh <- hh %>%
+  mutate(toiletType = ifelse(WS11 %in% c(11:13, 18, 21, 22, 31), 1,
+                             ifelse(WS11 == 95, 3, 2)))
+
+
+hh <- hh %>% mutate(flush = NA) %>% 
+  mutate(ifelse(WS11 %in% c(11:14, 18), 1, flush))
+
+hh <- hh %>% 
+  mutate(sharedToilet = ifelse(WS17 %in% c(1:5), 1, 
+                               ifelse(WS17 %in% 97:99, 9,
+                                      ifelse(is.na(WS17), 0, 2)))) %>%
+  mutate(sharedToilet = ifelse(WS16 == 2, 3, sharedToilet))
+
+
+
+
+# visual check
+aa = hh %>% select(WS1, WS1_lab, nhhmem, hhweightHH48, hhweight, HH48, stratum, PSU, drinkingWater, WS11)
+
 ```
+
+
+
+```{r}
+
+
+
+
+```
+
+
+After 10-WS include file call, resume
+
+```{r}
+
+hh <- hh %>% 
+  mutate(improvedWater = ifelse(drinkingWater == 1, 100, 0),
+         total = 1,
+         total100 = 100)
+
+
+
+
+```
+
+# Tables
+
+```{r}
+
+hh.tab <- hh %>% select(WS1, total, HH6, HH7, helevel,
+                        windex5, drinkingWater, total100,
+                        improvedWater, nhhmem)
+
+
+
+```
+
+
+Variable and Value labels all at once
+
+```{r}
+
+hh <- hh %>% apply_labels(
+  nhhmem = "Number of household members",
+  WS1 = c(
+  "Tanker Truck" = 61, 
+  "Cart with small tank" = 71, 
+  "Bottled water [A]" = 91,  
+  "Sachet water [A]" = 92, 
+  "Missing" = 99),
+  
+  
+  drinkingWater = "Main Source of drinking water",
+  drinkingWater = c(
+    "Improved sources" = 1,
+    "Unimproved sources" = 2
+    ),
+  toiletType = "Type of sanitation facility",
+  toiletType = c(
+    "Improved" = 1,
+    "Unimproved" = 2,
+    "Open defecation (no facility, bush, field)" = 3
+    ),
+  flush = "Flush/Pour flush to:",
+  sharedToilet = c(
+    "Not shared" = 0,
+    "5 households or less" = 1,
+    "More than 5 households" = 2,
+   "Public facility" = 3,
+   "DK/Missing" = 9
+  ),
+  improvedWater = "Percentage using improved sources of drinking water [1]",
+  WS1 = ""
+  
+  
+  )
+
+
+```
+
 
