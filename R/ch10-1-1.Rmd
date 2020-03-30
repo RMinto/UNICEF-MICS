@@ -10,10 +10,10 @@ output: html_document
 ```{r}
 
 library(tidyverse); library(haven); library(lubridate);
-library(Hmisc);
+library(Hmisc); library(survey)
 library(expss)
 
-library(tableone); library(sjPlot)
+library(tableone); library(sjPlot); library(srvyr)
 
 ```
  
@@ -23,7 +23,7 @@ library(tableone); library(sjPlot)
 
 hh <- read_sav("../Data/Tunisia_hh.sav")
 
-
+# hh <- as_factor(hh, only_labelled = TRUE)
 
 ```
 
@@ -35,30 +35,6 @@ Filter only cases where hh interview = 1, create a variable `hhweightHH48` by mu
 hh <- hh %>% filter(HH46 == 1) %>%
   mutate(hhweightHH48 = HH48 * hhweight,
          nhhmem = 1)
-
-var_lab(hh$nhhmem) <- "Number of household members"
-
-# for value labels, either can create new variable which maps values to text
-hh <- hh %>%  
-  mutate(WS1_lab = WS1) %>% 
-  mutate(WS1_lab = ifelse(WS1_lab == 61, "Tanker Truck", WS1_lab)) %>% 
-  mutate(WS1_lab = ifelse(WS1_lab == 71, "Cart with small tank", WS1_lab)) %>% 
-  mutate(WS1_lab = ifelse(WS1_lab == 91, "Bottled water [A]", WS1_lab)) %>% 
-  mutate(WS1_lab = ifelse(WS1_lab == 92, "Sachet water [A]", WS1_lab)) %>% 
-  mutate(WS1_lab = ifelse(WS1_lab == 99, "Missing", WS1_lab)) 
-        
-# or create value labels
-
-val_lab(hh$WS1) = num_lab("
-  61 Tanker Truck 
-  71 Cart with small tank 
-  91 Bottled water [A] 
-  92 Sachet water [A] 
-  99 Missing"
-)
-
-
-
 
 
 ```
@@ -73,39 +49,34 @@ hh <- hh %>%
   mutate(drinkingWater = ifelse(WS1 %in% c(11:14, 21, 31, 41, 51, 
                                            61, 71, 72, 91, 92), 1, 2))
 
-var_lab(hh$nhhmem) <- "Number of household members"
-val_lab(hh$drinkingWater) = num_lab("
-  1 Improved sources
-  2 Unimproved sources"
-)
-
-
-hh <- hh %>% apply_labels(
-  drinkingWater = "Main Source of drinking water",
-  drinkingWater = c("Improved sources" = 1,
-                    "Unimproved sources" = 2))
 
 
 
 hh <- hh %>%
-  mutate(toiletType = ifelse(WS11 %in% c(11:13, 18, 21, 22, 31), 1,
-                             ifelse(WS11 == 95, 3, 2)))
+  mutate(toiletType = case_when(
+    WS11 %in% c(11:13, 18, 21, 22, 31) ~ 1,
+    WS11 == 95 ~ 3,
+    TRUE ~ 2
+  ))
+  
 
 
 hh <- hh %>% mutate(flush = NA) %>% 
   mutate(ifelse(WS11 %in% c(11:14, 18), 1, flush))
 
-hh <- hh %>% 
-  mutate(sharedToilet = ifelse(WS17 %in% c(1:5), 1, 
-                               ifelse(WS17 %in% 97:99, 9,
-                                      ifelse(is.na(WS17), 0, 2)))) %>%
-  mutate(sharedToilet = ifelse(WS16 == 2, 3, sharedToilet))
 
 
+
+hh = hh %>% mutate(sharedToilet = case_when(
+  WS17 %in% c(1:5) ~ 1,
+  WS17 %in% 97:99 ~ 9,
+  is.na(WS17) ~ 0,
+  TRUE ~ 2))
+hh = hh %>% mutate(sharedToilet = ifelse(WS16 == 2, 3, sharedToilet))
 
 
 # visual check
-aa = hh %>% select(WS1, WS1_lab, nhhmem, hhweightHH48, hhweight, HH48, stratum, PSU, drinkingWater, WS11)
+aa = hh %>% select(WS1, HH1, HH2, nhhmem, hhweightHH48, hhweight, HH48, stratum, PSU, drinkingWater, WS11)
 
 ```
 
@@ -135,19 +106,38 @@ hh <- hh %>%
 
 # Tables
 
-```{r}
+```{r ,echo=FALSE, message=FALSE, warnings=FALSE, results='asis'}
 
-hh.tab <- hh %>% select(WS1, total, HH6, HH7, helevel,
+# other ws1 values not mapped to columns in tabulation plan?
+hh.tab <- hh %>% select(HH1, WS1, total, HH6, HH7, helevel,
                         windex5, drinkingWater, total100,
-                        improvedWater, nhhmem)
+                        improvedWater, nhhmem, toiletType, sharedToilet,
+                        flush, hhweight, hhweightHH48) %>% 
+  filter(WS1 %in% c(61, 71, 91, 92, 99)) 
+  
+
+
+#tabl = CrossTable(hh.tab$HH6 , hh.tab$WS1, prop.r = TRUE, 
+#                  digits = 3, missing.include = FALSE)
+
+tabl <- table(as_factor(hh.tab$HH6), as_factor(hh.tab$WS1))
+
+tabl <- table(hh.tab$HH6, hh.tab$WS1)
+
+kable(tabl, format = "html", digits = 3, row.names = TRUE) %>% 
+  kable_styling(bootstrap_options = "striped", font_size = 12, full_width = F)
 
 
 
 ```
 
 
+
+# All Value labels
+
 Variable and Value labels all at once
 
+Question if this is necessary at all in R, b/c can just as easily label R tables / figured with a list of labels when generating the tables / figures / reports, avoiding doing as we go along. 
 ```{r}
 
 hh <- hh %>% apply_labels(
@@ -180,12 +170,56 @@ hh <- hh %>% apply_labels(
    "DK/Missing" = 9
   ),
   improvedWater = "Percentage using improved sources of drinking water [1]",
+  HH6 = c("URBAN" = 1, "RURAL" = 2),
   WS1 = ""
   
   
   )
 
 
+
+
+# hh <- as_factor(hh, only_labelled = TRUE)
+
+
+
+
+
+
 ```
 
+
+```{r}
+
+hh.tab %>% as_factor(only_labelled = TRUE) %>% 
+  as_survey(weights = c(hhweightHH48)) %>%
+  group_by(HH6, WS1, nhhmem) %>%
+  summarize(n = survey_total()) %>%
+  spread(WS1, n) %>% 
+  kable(format = "html", digits = 3, row.names = TRUE) %>% 
+  kable_styling(bootstrap_options = "striped", font_size = 12, full_width = F)
+
+
+a = as_factor(hh.tab, only_labelled = TRUE)
+
+CrossTable(a$HH6, a$WS1, expected = FALSE, prop.col = FALSE, prop.r = TRUE, 
+           prop.t = F, prop.chisq = F, chisq = F) %>% 
+  kable(format = "html", digits = 3, row.names = TRUE) %>% 
+  kable_styling(bootstrap_options = "striped", font_size = 12, full_width = F)
+
+mat = as.matrix(cbind(a$HH6, a$HH7))
+
+tabl = CrossTable(a$HH6, a$WS1, expected = FALSE, prop.col = FALSE, prop.r = TRUE, 
+           prop.t = F, prop.chisq = F, chisq = F, max.width = 2)[[2]]
+
+tabl %>%  kable(format = "html", digits = 3, row.names = TRUE) %>% 
+  kable_styling(bootstrap_options = "striped", font_size = 12, full_width = F)
+
+calculate(hh.tab, cro_rpct(HH6, list(total(), WS1), total_statistic = "u_cases")) %>% 
+  kable(format = "html", digits = 3, row.names = TRUE) %>% 
+  kable_styling(bootstrap_options = "striped", font_size = 12, full_width = F)
+
+
+
+```
 
