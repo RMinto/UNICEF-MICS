@@ -8,5 +8,14 @@ This repo is for keeping track of project code, allowing team members to view pr
 
 ---
 
+`Data` Folder contains datasets / input data files 
+
+`R` Contains the working versions of the scripts for producing the SFR tables
+`R` subdirectories by SFR chapter
+
+`SPS` folder contains the .SPS files of SPSS syntax to translate into R
+
+
+
 ## Meeting:
 

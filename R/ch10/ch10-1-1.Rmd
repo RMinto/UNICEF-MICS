@@ -1,0 +1,265 @@
+---
+title: "MICS6 - 10 - WS.1.1"
+author: "Reid Minto"
+date: "March 25, 2020"
+output:
+  word_document: default
+  html_document: default
+always_allow_html: true
+---
+
+# Load libraries
+
+
+
+```{r, warning = F, message = F}
+
+library(tidyverse); library(haven); library(lubridate);
+library(knitr); library(kableExtra)
+library(Hmisc); library(survey)
+library(expss); library(here); library(gmodels)
+
+library(tableone); library(sjPlot); library(srvyr)
+
+```
+ 
+# Import data
+
+`here` function navigates you to top level Rproj directory
+
+
+
+```{r}
+# haven library called above has read_sav function for reading in .sav / .sps etc
+# files from other languages
+here()
+hh <- read_sav(here("Data/Tunisia_hh.sav"))
+# hh <- as_factor(hh, only_labelled = TRUE)
+
+
+
+
+```
+
+Filter only cases where hh interview = 1, create a variable `hhweightHH48` by multiplying 
+`HH48` and `hhweight`, number of hh members by sample weight
+
+
+Note: this is just first pass rough draft / run through - much of this looks like it can be consolidated into a single chunk / a single function execute per section from what I've seen so far, but broken up in first pass
+
+```{r}
+
+hh <- hh %>% filter(HH46 == 1) %>%
+  mutate(hhweightHH48 = HH48 * hhweight,
+         nhhmem = 1)
+
+
+```
+
+Include `MICS6 - 10 - WS.sps` is called
+
+
+
+```{r}
+
+
+hh <- hh %>% 
+  mutate(drinkingWater = ifelse(WS1 %in% c(11:14, 21, 31, 41, 51, 
+                                           61, 71, 72, 91, 92), 1, 2))
+
+# `casewhen` cleaner than nested chains of ifelse for >2 conditions
+# same as SQL 'case when', but TRUE ~ val acts in place of "else"
+hh <- hh %>%
+  mutate(toiletType = case_when(
+    WS11 %in% c(11:13, 18, 21, 22, 31) ~ 1,
+    WS11 == 95 ~ 3,
+    TRUE ~ 2
+  ))
+  
+
+
+hh <- hh %>% mutate(flush = NA) %>% 
+  mutate(flush = ifelse(WS11 %in% c(11:14, 18), 1, flush))
+
+
+
+hh = hh %>% mutate(sharedToilet = case_when(
+  WS17 %in% c(1:5) ~ 1,
+  WS17 %in% 97:99 ~ 9,
+  is.na(WS17) ~ 0,
+  TRUE ~ 2))
+hh = hh %>% mutate(sharedToilet = ifelse(WS16 == 2, 3, sharedToilet))
+
+
+# visual check
+aa = hh %>% select(WS1, HH1, HH2, nhhmem, hhweightHH48, hhweight, HH48, stratum, PSU, drinkingWater, WS11)
+
+```
+
+
+
+After 10-WS include file call, resume
+
+
+
+```{r}
+
+hh <- hh %>% 
+  mutate(improvedWater = ifelse(drinkingWater == 1, 100, 0),
+         total = 1,
+         total100 = 100)
+
+
+
+
+```
+
+
+
+
+# All Value labels
+
+Variable and Value labels all at once
+
+Question if this is necessary at all in R, b/c can just as easily label R tables / figured with a list of labels when generating the tables / figures / reports, avoiding doing as we go along. 
+
+
+
+```{r}
+
+hh <- hh %>% apply_labels(
+  nhhmem = "Number of household members",
+  WS1 = c(
+  "Tanker Truck" = 61, 
+  "Cart with small tank" = 71, 
+  "Bottled water [A]" = 91,  
+  "Sachet water [A]" = 92, 
+  "Missing" = 99),
+  
+  
+  drinkingWater = "Main Source of drinking water",
+  drinkingWater = c(
+    "Improved sources" = 1,
+    "Unimproved sources" = 2
+    ),
+  toiletType = "Type of sanitation facility",
+  toiletType = c(
+    "Improved" = 1,
+    "Unimproved" = 2,
+    "Open defecation (no facility, bush, field)" = 3
+    ),
+  flush = "Flush/Pour flush to:",
+  sharedToilet = c(
+    "Not shared" = 0,
+    "5 households or less" = 1,
+    "More than 5 households" = 2,
+   "Public facility" = 3,
+   "DK/Missing" = 9
+  ),
+  improvedWater = "Percentage using improved sources of drinking water [1]",
+  HH6 = c("URBAN" = 1, "RURAL" = 2),
+  WS1 = ""
+  
+  
+  )
+
+
+
+
+# hh <- as_factor(hh, only_labelled = TRUE)
+
+
+
+
+
+
+```
+
+
+# Tables
+
+
+* Note - lots of understanding and formatting etc to get through on tables
+
+
+explore expss package which seems to have capability to produce `ctables` 
+equivalents
+
+
+
+
+```{r ,echo=FALSE, message=FALSE, warnings=FALSE, results = 'asis'}
+
+#################    URGENT   ######################
+# find why tabulation plan excel sheet columns don't correspond to spss value labels
+
+# other ws1 values not mapped to columns in tabulation plan?
+hh.tab <- hh %>% select(HH1, WS1, total, HH6, HH7, helevel,
+                        windex5, drinkingWater, total100,
+                        improvedWater, nhhmem, toiletType, sharedToilet,
+                        flush, hhweight, hhweightHH48) %>% 
+  filter(WS1 %in% c(61, 71, 91, 92, 99)) 
+  
+hh.tab = as_factor(hh.tab, only_labelled = TRUE)
+
+#tabl = CrossTable(hh.tab$HH6 , hh.tab$WS1, prop.r = TRUE, 
+#                  digits = 3, missing.include = FALSE)
+
+#tabl <- table(as_factor(hh.tab$HH6), as_factor(hh.tab$WS1))
+
+#tabl <- table(hh.tab$HH6, hh.tab$WS1)
+
+kable(table(hh.tab$HH6, hh.tab$WS1), format = "html", digits = 3, row.names = TRUE) %>% 
+  kable_styling(bootstrap_options = c("striped" , "bordered"), 
+                font_size = 13, full_width = F)
+
+
+
+```
+
+
+
+
+## Test table packages
+
+After lots of exploring for table producing,
+`expss` package in R seems most promising, as it seems to have direct ability to produce any `ctable` from SPSS
+
+Much formatting to be done
+
+```{r, results= 'asis'}
+
+#hh.tab %>% as_factor(only_labelled = TRUE) %>% 
+#  as_survey(weights = c(hhweightHH48)) %>%
+#  group_by(HH6, WS1, nhhmem) %>%
+#  summarize(n = survey_total()) %>%
+#  spread(WS1, n) %>% 
+#  kable(format = "html", digits = 3, row.names = TRUE) %>% 
+#  kable_styling(bootstrap_options = "striped", font_size = 12, full_width = F)
+
+
+hh.tab = as_factor(zap_labels(hh.tab), only_labelled = TRUE)
+
+#CrossTable(hh.tab$HH6, hh.tab$WS1, expected = FALSE, prop.col = FALSE, prop.r = TRUE, 
+#           prop.t = F, prop.chisq = F, chisq = F) %>% 
+#  kable(format = "html", digits = 3, row.names = TRUE) %>% 
+#  kable_styling(bootstrap_options = "striped", font_size = 12, full_width = F)
+
+
+
+#tabl = CrossTable(hh.tab$HH6, hh.tab$WS1, expected = FALSE, 
+#                  prop.col = FALSE, prop.r = TRUE, 
+#           prop.t = F, prop.chisq = F, chisq = F, max.width = 2)[[2]]
+
+#tabl %>%  kable(format = "html", digits = 3, row.names = TRUE) %>% 
+#  kable_styling(bootstrap_options = "striped", font_size = 12, full_width = F)
+
+calculate(hh.tab, cro_rpct(HH6, list(total(), WS1), 
+                           total_statistic = "u_cases")) %>% 
+  kable(format = "html", digits = 3, row.names = TRUE) %>% 
+  kable_styling(bootstrap_options = "striped", font_size = 12, full_width = F)
+
+
+
+```
+
