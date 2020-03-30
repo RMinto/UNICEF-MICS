@@ -1,0 +1,51 @@
+---
+title: "SPSS to R"
+author: "Reid Minto"
+date: "March 30, 2020"
+output: html_document
+---
+
+```{r}
+library(tidyverse);
+```
+
+`select if (HH46  = 1).`
+```{r}
+
+df %>% filter(var == value)
+
+```
+
+```{r}
+
+# To convert into spss to R functions
+
+
+
+compute hhweightHH48 = HH48*hhweight.
+# df %>% mutate(hhweightHH48 = HH48 * hhweight)
+
+variable labels  total100 "Total".
+# variable labels are attribute labels
+
+
+value labels total100 100 " ".
+# value labels are just string categories assigned to coded values of a variable
+hh <- hh %>% apply_labels(
+  nhhmem = "Number of household members",
+  WS1 = c(
+    "Tanker Truck" = 61, 
+    "Cart with small tank" = 71, 
+    "Bottled water [A]" = 91,  
+    "Sachet water [A]" = 92, 
+    "Missing" = 99),
+  
+
+do if any(WS1, 11, 12, 13, 14, 21, 31, 41, 51, 61, 71, 72,  91, 92) .
++ compute drinkingWater = 1 .
+else .
++ compute drinkingWater = 2 .
+end if.
+# create new variable that's just using ifelse for conditional evaluation 
+# based on values of var already in dataset
+```
