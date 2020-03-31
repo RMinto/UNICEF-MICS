@@ -1,5 +1,5 @@
 ---
-title: "ch10 1.2"
+title: "MICS6 - WS - 10.1.2"
 author: "Reid Minto"
 date: "March 25, 2020"
 output: html_document
@@ -8,9 +8,13 @@ output: html_document
 This is still rough draft of scripts, so eg might not even break markdowns by sections depending on how much additional code needs to be added (some sections just repetition of what was already done in previous section , not necessary in R)
 
 
+
 ```{r}
 
+
 ```
+
+
 
 ```{r}
 

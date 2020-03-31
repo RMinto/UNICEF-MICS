@@ -3,9 +3,9 @@ title: "MICS6 - 10 - WS.1.1"
 author: "Reid Minto"
 date: "March 25, 2020"
 output:
-  word_document: default
-  html_document: default
-always_allow_html: true
+  prettydoc::html_pretty:
+    theme: hpstr
+    highlight: github
 ---
 
 # Load libraries
@@ -18,6 +18,8 @@ library(tidyverse); library(haven); library(lubridate);
 library(knitr); library(kableExtra)
 library(Hmisc); library(survey)
 library(expss); library(here); library(gmodels)
+library(flextable)
+
 
 library(tableone); library(sjPlot); library(srvyr)
 
@@ -153,12 +155,13 @@ hh <- hh %>% apply_labels(
     "Not shared" = 0,
     "5 households or less" = 1,
     "More than 5 households" = 2,
-   "Public facility" = 3,
-   "DK/Missing" = 9
+    "Public facility" = 3,
+    "DK/Missing" = 9
   ),
   improvedWater = "Percentage using improved sources of drinking water [1]",
-  HH6 = c("URBAN" = 1, "RURAL" = 2),
-  WS1 = ""
+  HH6 = c("URBAN" = 1, "RURAL" = 2)
+#  ,WS1 = ""
+
   
   
   )
@@ -259,7 +262,99 @@ calculate(hh.tab, cro_rpct(HH6, list(total(), WS1),
   kable(format = "html", digits = 3, row.names = TRUE) %>% 
   kable_styling(bootstrap_options = "striped", font_size = 12, full_width = F)
 
+calculate(hh.tab, cro_rpct(HH6, list(total(), WS1), 
+                           total_statistic = "u_cases")) 
+
+  
+    flextable(data.frame(calculate(hh.tab, cro_rpct(HH6, list(total(), WS1), 
+                           total_statistic = "u_cases")) ))
+
+```
 
 
+
+
+# 10.1.2
+
+Recode WS4
+
+
+Odd that 1.2 syntax file has variable label for drinkingWater
+exact same as time var label....
+
+
+```{r}
+
+hh <- hh %>% 
+  mutate(
+    time = case_when(
+    WS4 %in% 0:30 ~ 2,
+    WS4 %in% 31:990 ~ 3,
+    WS4 %in% 998:999 ~ 9,
+    WS1 %in% 11:13 | WS2 %in% 11:13 | WS3 %in% 1:2 ~ 1
+    )) %>% 
+  mutate(INDWS2 = 0) %>% 
+  mutate(INDWS2 = case_when(
+    WS1 %in% c(11, 12) ~ 100,
+    WS1 %in% c(61, 71, 72) & WS4 <= 30 ~ 100,
+    WS1 %in% c(13, 14, 21, 31, 41, 51) & WS3 %in% 1:2 | WS4 <= 30 ~ 100,
+    WS1 %in% 91:92 & WS2 %in% 11:12 ~ 100,
+    WS1 %in% 91:92 & (WS2 %in% c(61, 71, 72) & WS4 <= 30) ~ 100,
+    WS1 %in% 91:92 & WS2 %in% c(13, 14, 21, 31, 41, 51) & 
+      (WS3 %in% 1:2 | WS4 <= 30) ~ 100
+  )  )
+
+
+```
+
+
+
+## 10.1.2 Labels
+
+
+```{r}
+
+hh <- hh %>% 
+  apply_labels(
+    time = "Time to source of drinking water",
+    time = c(
+      "Water on premises" = 1,
+      "Up to and including 30 minutes [A]" = 2,
+      "More than 30 minutes" = 3,
+      "DK/Missing" = 9
+    ),
+    drinkingWater = "Time to source of drinking water",
+    drinkingWater = c(
+      "Users of improved drinking water sources" = 1,
+      "Users of unimproved drinking water sources" = 2
+    ),
+    INDWS2 = "Percentage using basic drinking water services [1]"
+    
+  )
+  
+
+```
+
+
+
+## 10.1.2 Tables
+
+```{r, eval = F}
+ctables
+  /vlabels variables = time
+           display = none
+  /table   total [c]
+         + HH6 [c]
+         + HH7 [c]
+         + helevel [c]
+         + ethnicity [c]
+         + windex5 [c]
+   by
+           drinkingWater [c] >
+             time[c][layerrowpct.validn '' f5.1]
+         + total100 [s] [mean '' f5.1]
+         + INDWS2 [s] [mean '' f5.1]
+         + nhhmem [s] [count '' f5.0]
+  /categories variables=all empty=exclude missing=exclude
 ```
 
