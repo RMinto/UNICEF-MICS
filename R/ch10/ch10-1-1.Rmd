@@ -2,10 +2,8 @@
 title: "MICS6 - 10 - WS.1.1"
 author: "Reid Minto"
 date: "March 25, 2020"
-output:
-  prettydoc::html_pretty:
-    theme: cayman
-    highlight: github
+output: github_document
+always_allow_html: true
 ---
 
 # Load libraries
@@ -266,8 +264,8 @@ calculate(hh.tab, cro_rpct(HH6, list(total(), WS1),
                            total_statistic = "u_cases")) 
 
   
-    flextable(data.frame(calculate(hh.tab, cro_rpct(HH6, list(total(), WS1), 
-                           total_statistic = "u_cases")) ))
+#    flextable(data.frame(calculate(hh.tab, cro_rpct(HH6, list(total(), WS1), 
+#                           total_statistic = "u_cases")) ))
 
 ```
 
