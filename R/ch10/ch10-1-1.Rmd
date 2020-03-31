@@ -4,7 +4,7 @@ author: "Reid Minto"
 date: "March 25, 2020"
 output:
   prettydoc::html_pretty:
-    theme: hpstr
+    theme: cayman
     highlight: github
 ---
 
