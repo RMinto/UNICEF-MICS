@@ -188,7 +188,7 @@ hh <- hh %>% apply_labels(
 
 
 
-# 10.1.1 Table
+
 
 ```{r}
 
@@ -230,6 +230,18 @@ kable(tab, digits = 0) %>%
 ```
 
 
+# 10.1.1 Table
+
+```{r, echo=F}
+kable(tab, digits = 0) %>% 
+  kable_styling("striped") %>% 
+  pack_rows("Total", 1, 1) %>% 
+  pack_rows(label(hh.tab$HH6), 2, 3) %>% 
+  pack_rows(label(hh.tab$HH7), 4, 10) %>% 
+  pack_rows(label(hh.tab$helevel), 11, 15) %>% 
+  pack_rows(label(hh.tab$windex5), 16, 20)
+
+```
 
 
 

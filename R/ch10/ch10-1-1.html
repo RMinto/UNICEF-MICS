@@ -522,9 +522,6 @@ aa = hh %&gt;%
 </div>
 <div id="tables" class="section level1">
 <h1>Tables</h1>
-</div>
-<div id="table" class="section level1">
-<h1>10.1.1 Table</h1>
 <pre class="r"><code>hh.tab &lt;- hh %&gt;% 
   mutate(nn = nhhmem * hhweightHH48) %&gt;% 
   select(WS1, HH6, HH7, helevel, windex5, drinkingWater, total100, total, improvedWater, 
@@ -555,6 +552,207 @@ kable(tab, digits = 0) %&gt;%
   pack_rows(label(hh.tab$HH7), 4, 10) %&gt;% 
   pack_rows(label(hh.tab$helevel), 11, 15) %&gt;% 
   pack_rows(label(hh.tab$windex5), 16, 20)</code></pre>
+<table class="table table-striped" style="margin-left: auto; margin-right: auto;">
+<thead>
+<tr>
+<th style="text-align:left;">
+</th>
+<th style="text-align:right;">
+Count
+</th>
+</tr>
+</thead>
+<tbody>
+<tr grouplength="1">
+<td colspan="2" style="border-bottom: 1px solid;">
+<strong>Total</strong>
+</td>
+</tr>
+<tr>
+<td style="text-align:left; padding-left: 2em;" indentlevel="1">
+Total
+</td>
+<td style="text-align:right;">
+43638
+</td>
+</tr>
+<tr grouplength="2">
+<td colspan="2" style="border-bottom: 1px solid;">
+<strong>Area</strong>
+</td>
+</tr>
+<tr>
+<td style="text-align:left; padding-left: 2em;" indentlevel="1">
+URBAN
+</td>
+<td style="text-align:right;">
+29853
+</td>
+</tr>
+<tr>
+<td style="text-align:left; padding-left: 2em;" indentlevel="1">
+RURAL
+</td>
+<td style="text-align:right;">
+13785
+</td>
+</tr>
+<tr grouplength="7">
+<td colspan="2" style="border-bottom: 1px solid;">
+<strong>Region</strong>
+</td>
+</tr>
+<tr>
+<td style="text-align:left; padding-left: 2em;" indentlevel="1">
+DISTRICT TUNIS
+</td>
+<td style="text-align:right;">
+10398
+</td>
+</tr>
+<tr>
+<td style="text-align:left; padding-left: 2em;" indentlevel="1">
+NORD EST
+</td>
+<td style="text-align:right;">
+6146
+</td>
+</tr>
+<tr>
+<td style="text-align:left; padding-left: 2em;" indentlevel="1">
+NORD OUEST
+</td>
+<td style="text-align:right;">
+4777
+</td>
+</tr>
+<tr>
+<td style="text-align:left; padding-left: 2em;" indentlevel="1">
+CENTRE EST
+</td>
+<td style="text-align:right;">
+10289
+</td>
+</tr>
+<tr>
+<td style="text-align:left; padding-left: 2em;" indentlevel="1">
+CENTRE OUEST
+</td>
+<td style="text-align:right;">
+5584
+</td>
+</tr>
+<tr>
+<td style="text-align:left; padding-left: 2em;" indentlevel="1">
+SUD EST
+</td>
+<td style="text-align:right;">
+3957
+</td>
+</tr>
+<tr>
+<td style="text-align:left; padding-left: 2em;" indentlevel="1">
+SUD OUEST
+</td>
+<td style="text-align:right;">
+2486
+</td>
+</tr>
+<tr grouplength="5">
+<td colspan="2" style="border-bottom: 1px solid;">
+<strong>Education of household head</strong>
+</td>
+</tr>
+<tr>
+<td style="text-align:left; padding-left: 2em;" indentlevel="1">
+Pre-primary or none
+</td>
+<td style="text-align:right;">
+7899
+</td>
+</tr>
+<tr>
+<td style="text-align:left; padding-left: 2em;" indentlevel="1">
+Primary
+</td>
+<td style="text-align:right;">
+16191
+</td>
+</tr>
+<tr>
+<td style="text-align:left; padding-left: 2em;" indentlevel="1">
+Secondary
+</td>
+<td style="text-align:right;">
+14179
+</td>
+</tr>
+<tr>
+<td style="text-align:left; padding-left: 2em;" indentlevel="1">
+Higher
+</td>
+<td style="text-align:right;">
+5294
+</td>
+</tr>
+<tr>
+<td style="text-align:left; padding-left: 2em;" indentlevel="1">
+Missing/DK
+</td>
+<td style="text-align:right;">
+75
+</td>
+</tr>
+<tr grouplength="5">
+<td colspan="2" style="border-bottom: 1px solid;">
+<strong>Wealth index quintile</strong>
+</td>
+</tr>
+<tr>
+<td style="text-align:left; padding-left: 2em;" indentlevel="1">
+Poorest
+</td>
+<td style="text-align:right;">
+8728
+</td>
+</tr>
+<tr>
+<td style="text-align:left; padding-left: 2em;" indentlevel="1">
+Second
+</td>
+<td style="text-align:right;">
+8727
+</td>
+</tr>
+<tr>
+<td style="text-align:left; padding-left: 2em;" indentlevel="1">
+Middle
+</td>
+<td style="text-align:right;">
+8726
+</td>
+</tr>
+<tr>
+<td style="text-align:left; padding-left: 2em;" indentlevel="1">
+Fourth
+</td>
+<td style="text-align:right;">
+8731
+</td>
+</tr>
+<tr>
+<td style="text-align:left; padding-left: 2em;" indentlevel="1">
+Richest
+</td>
+<td style="text-align:right;">
+8725
+</td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="table" class="section level1">
+<h1>10.1.1 Table</h1>
 <table class="table table-striped" style="margin-left: auto; margin-right: auto;">
 <thead>
 <tr>
