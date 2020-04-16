@@ -30,3 +30,4 @@ Jose: Use CSPro and just go with whatever is easiest in R, i.e. disregard SPSS r
 
 [Ch10 WS 1.1](https://github.com/RMinto/UNICEF-MICS/blob/master/R/ch10/ch10-1-1.md)
 
+[Ch10 WS 1.2](https://github.com/RMinto/UNICEF-MICS/blob/master/R/ch10/ch10-1-1.md#1012)
