@@ -2,14 +2,27 @@
 title: "SPSS to R"
 author: "Reid Minto"
 date: "March 30, 2020"
-output: html_document
+output:
+  word_document: default
+  html_document: default
 ---
 
-```{r}
-library(tidyverse);
+# Libraries
+
+```{r global_options}
+
+
+knitr::opts_chunk$set(eval = F)
+
+
+
 ```
 
 `select if (HH46  = 1).`
+
+`select if` is SPSS version of `filter` for subsetting in R, based on
+`filter(expr)`
+
 ```{r}
 
 df %>% filter(var == value)
@@ -41,11 +54,44 @@ hh <- hh %>% apply_labels(
     "Missing" = 99),
   
 
+
+```
+
 do if any(WS1, 11, 12, 13, 14, 21, 31, 41, 51, 61, 71, 72,  91, 92) .
 + compute drinkingWater = 1 .
 else .
 + compute drinkingWater = 2 .
 end if.
+```{r}
+
 # create new variable that's just using ifelse for conditional evaluation 
 # based on values of var already in dataset
 ```
+
+
+# ctables
+
+ctables
+  /vlabels variables = WS1
+           display = none
+  /table   total [c]
+         + HH6 [c]
+         + HH7 [c]
+         + helevel [c]
+         + ethnicity [c]
+         + windex5 [c]
+   by 
+           drinkingWater [c] > 
+             ws1 [c] [layerrowpct.validn,' ',f5.1]
+         + total100 [s] [mean '' f5.1] 
+         + improvedWater [s] [mean '' f5.1] 
+         + nhhmem [s] [count '' f5.0] 
+
+```{r}
+
+
+
+```
+
+
+
