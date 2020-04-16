@@ -38,6 +38,6 @@ Below are the direct markdown links to the tables
 
 ### WS 1.1
 
-[Ch10 WS 1.1](https://github.com/RMinto/UNICEF-MICS/blob/master/R/ch10/ch10-1-1.md)
+[Ch10 WS 1.1](https://github.com/RMinto/UNICEF-MICS/blob/master/R/ch10/ch10-1-1.md#1011-table)
 
-[Ch10 WS 1.2](https://github.com/RMinto/UNICEF-MICS/blob/master/R/ch10/ch10-1-1.md#1012)
+[Ch10 WS 1.2]()

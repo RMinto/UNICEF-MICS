@@ -2,12 +2,13 @@
 title: "MICS6 - 10 - WS.1.1"
 author: "Reid Minto"
 date: "March 25, 2020"
-output:
-  rmarkdown::html_document:
-    theme: journal
+output: github_document
+always_allow_html: true
 ---
 
 # Load libraries
+
+
 
 
 
