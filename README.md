@@ -24,6 +24,9 @@ Meeting notes:
 - Discussed differences between value / variable labels vs CSPro output as single source of truth. 
 Jose: Use CSPro and just go with whatever is easiest in R, i.e. disregard SPSS routines wherever convenient if we can do the same thing in R.
 
-## First Table Produced 
+# Ch10
 
-[First table here](https://github.com/RMinto/UNICEF-MICS/blob/master/R/ch10/ch10-1-1.md)
+### WS 1.1
+
+[Ch10 WS 1.1](https://github.com/RMinto/UNICEF-MICS/blob/master/R/ch10/ch10-1-1.md)
+
