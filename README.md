@@ -42,8 +42,7 @@ Below are the direct markdown links to the tables
 
 # Ch10
 
-### WS 1.1
 
-[Ch10 WS 1.1](https://github.com/RMinto/UNICEF-MICS/blob/master/R/ch10/ch10-1-1.md#1011-table)
+[Ch10 WS 1.1](https://github.com/RMinto/UNICEF-MICS/blob/master/R/ch10/ch10-1-1.md#sfr-table-ch10-ws-11)
 
 [Ch10 WS 1.2]()
