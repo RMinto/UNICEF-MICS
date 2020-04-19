@@ -137,11 +137,29 @@ Question if this is necessary at all in R, b/c can just as easily label R tables
 hh <- hh %>% apply_labels(
   nhhmem = "Number of household members",
   WS1 = c(
-  "Tanker Truck" = 61, 
-  "Cart with small tank" = 71, 
-  "Bottled water [A]" = 91,  
-  "Sachet water [A]" = 92, 
-  "Missing" = 99),
+#  "Tanker Truck" = 61, 
+#  "Cart with small tank" = 71, 
+#  "Bottled water [A]" = 91,  
+#  "Sachet water [A]" = 92, 
+#  "Missing" = 99,
+  # not in SPS syntax, only in CSPro SPS file.... 
+  "ROBINET: DANS LE LOGEMENT" =   11,
+   "ROBINET: DANS LA CONCESSION/JARDIN/ PARCELLE" = 12, 
+    "ROBINET: CHEZ LE VOISIN" = 13,
+    "ROBINET: ROBIENT PUBLIC/BORNE FONTAINE" = 14,
+     "PUITS A POMPE/FORAGE" = 21,
+     "PUITS CREUSE: PROTEGE" = 31,
+     "PUITS CREUSE: PAS PROTEGE" = 32,
+     "SOURCE: SOURCE PROTEGEE" = 41,
+     "SOURCE: SOURCE NON PROTEGEE" = 42,
+     "EAU DE PLUIE" = 51,
+     "CAMION CITERNE" = 61,
+     "CHARRETTE AVEC PETITE CITERNE" = 71,
+    "EAU DE SURFACE (RIVIERE, BARRAGE, LAC, MARE, COURANT, CANAL, SYSTEME D’IRRIGATION)" = 81,
+    "EAU CONDITIONNEE: EAU EN BOUTEILLE" = 91,
+    "EAU CONDITIONNEE: EAU EN SACHET" = 92,
+    "AUTRE" = 96,
+    "NON REPONSE" = 99),
   
   
   drinkingWater = "Main Source of drinking water",
@@ -165,7 +183,7 @@ hh <- hh %>% apply_labels(
   ),
   improvedWater = "Percentage using improved sources of drinking water [1]",
   HH6 = c("URBAN" = 1, "RURAL" = 2)
-#  ,WS1 = ""
+
 
   
   
@@ -197,12 +215,12 @@ hh.tab <- hh %>%
   mutate(nn = nhhmem * hhweightHH48) %>% 
   select(WS1, HH6, HH7, helevel, windex5, drinkingWater, total100, total, improvedWater, 
          nhhmem, nn)
-  
+
 # convert sps labels to factor labels in r
 hh.tab = as_factor(hh.tab, only_labelled = TRUE)
+hh = hh %>% mutate(nn = nhhmem * hhweightHH48)
 
-
-tab.total = hh.tab %>% tally(nn, name = "Count")
+tab.total = hh %>% tally(nn, name = "Count")
 
 tab = tab.total %>% 
   rbind.data.frame(
@@ -212,20 +230,23 @@ tab = tab.total %>%
     hh.tab %>% group_by(windex5) %>% tally(nn, name = "Count") %>% select(Count)
   ) %>% data.frame()
 
+
 row.names(tab) = c("Total", levels(hh.tab$HH6), levels(hh.tab$HH7), 
                    levels(hh.tab$helevel), levels(hh.tab$windex5))
 
 
-kable(tab, digits = 0) %>% 
-  kable_styling("striped") %>% 
-  pack_rows("Total", 1, 1) %>% 
-  pack_rows(label(hh.tab$HH6), 2, 3) %>% 
-  pack_rows(label(hh.tab$HH7), 4, 10) %>% 
-  pack_rows(label(hh.tab$helevel), 11, 15) %>% 
-  pack_rows(label(hh.tab$windex5), 16, 20)
+#kable(tab, digits = 0) %>% 
+#  kable_styling("striped") %>% 
+#  pack_rows("Total", 1, 1) %>% 
+#  pack_rows(label(hh.tab$HH6), 2, 3) %>% 
+#  pack_rows(label(hh.tab$HH7), 4, 10) %>% 
+#  pack_rows(label(hh.tab$helevel), 11, 15) %>% 
+#  pack_rows(label(hh.tab$windex5), 16, 20)
 
 
 
+N <- tab$Count
+df.tab = data.frame(tab)
 
 
 ```
@@ -234,6 +255,7 @@ kable(tab, digits = 0) %>%
 # 10.1.1 Table
 
 ```{r, echo=F}
+
 kable(tab, digits = 0) %>% 
   kable_styling("striped") %>% 
   pack_rows("Total", 1, 1) %>% 
@@ -244,10 +266,65 @@ kable(tab, digits = 0) %>%
 
 ```
 
+```{r}
+
+tab2 = table(c(hh.tab$HH6, hh.tab$HH7, hh.tab$helevel, hh.tab$windex5), c(rep(hh.tab$WS1, 4)))
+tab2 = table(c(hh$HH6, as_factor(hh$HH7), hh$helevel, 
+               hh$windex5), c(rep(hh$WS1, 4)))
+
+kable(tab2, digits = 0) %>% 
+  kable_styling("striped")
+
+
+
+```
+
+
+
+```{r}
+
+
+tabf = xtabs(nn ~ WS1, hh) %>% 
+  rbind(xtabs(nn ~ HH6 + WS1, hh)) %>% 
+  rbind(xtabs(nn ~ as_factor(HH7) + WS1, hh)) %>%
+  rbind(xtabs(nn ~ as_factor(helevel) + WS1, hh)) %>% 
+  rbind(xtabs(nn ~ as_factor(windex5) + WS1, hh))
+
+tabf = tabf %>% cbind(Total = rowSums(tabf))
+#labels(tabf)[[1]][1] = "Total"
+tab.final = apply(tabf, 2, function(x) (x*100) / tabf[, 17]) %>% cbind(round(df.tab$Count))
 
 
 
 
+tabf.rows = labels(tabf)[[1]]
+tabf.cols = labels(tabf)[[2]]
+
+
+
+
+
+```
+
+# SFR Table ch10 WS 1.1
+
+
+```{r}
+
+tab.final %>% 
+  kable(digits = 1, format.args = list(big.mark = ",", scientific = FALSE)) %>% 
+  kable_styling(c("striped"), font_size = 13) %>% 
+  pack_rows("Total", 1, 1) %>% 
+  pack_rows(label(hh.tab$HH6), 2, 3) %>% 
+  pack_rows(label(hh.tab$HH7), 4, 10) %>% 
+  pack_rows(label(hh.tab$helevel), 11, 15) %>% 
+  pack_rows(label(hh.tab$windex5), 16, 20) %>% 
+  add_header_above(c(" " , "Eau courante" = 4, " " = 14)) %>% 
+  add_header_above(c(" ", "Sources améliorées" = 12, "Sources non améliorées" = 4, " " = 2)) %>% 
+  add_header_above(c(" ", "Source principale d'eau de boisson" = 18))
+
+
+```
 
 # 10.1.2
 
