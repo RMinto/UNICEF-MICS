@@ -313,7 +313,7 @@ tabf.cols = labels(tabf)[[2]]
 
 tab.final %>% 
   kable(digits = 1, format.args = list(big.mark = ",", scientific = FALSE)) %>% 
-  kable_styling(c("striped"), font_size = 13) %>% 
+  kable_styling(c("striped"), font_size = 12) %>% 
   pack_rows("Total", 1, 1) %>% 
   pack_rows(label(hh.tab$HH6), 2, 3) %>% 
   pack_rows(label(hh.tab$HH7), 4, 10) %>% 
