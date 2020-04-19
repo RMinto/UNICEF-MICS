@@ -309,7 +309,7 @@ tabf.cols = labels(tabf)[[2]]
 # SFR Table ch10 WS 1.1
 
 
-```{r}
+```{r, echo = F}
 
 tab.final %>% 
   kable(digits = 1, format.args = list(big.mark = ",", scientific = FALSE)) %>% 
