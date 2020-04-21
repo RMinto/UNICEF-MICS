@@ -49,165 +49,122 @@ Filter only cases where hh interview = 1, create a variable `hhweightHH48` by mu
 
 Note: this is just first pass rough draft / run through - much of this looks like it can be consolidated into a single chunk / a single function execute per section from what I've seen so far, but broken up in first pass
 
-```{r}
-
-hh <- hh %>% filter(HH46 == 1) %>%
-  mutate(hhweightHH48 = HH48 * hhweight,
-         nhhmem = 1)
 
 
-```
 
-Include `MICS6 - 10 - WS.sps` is called
-
-
+# 10 - WS.1.1
 
 ```{r}
+
+hh <- hh %>% filter(HH46 == 1) %>% 
+  mutate(hhweightHH48 = HH48 * hhweight) %>% mutate(nhhmem = 1 * hhweightHH48)
+
+hh <- hh %>% 
+  apply_labels(nhhmem = "Number of household members")
+
+val_lab(hh$nhhmem) = make_labels("
+    11 ROBINET: DANS LE LOGEMENT
+    12 ROBINET: DANS LA CONCESSION/JARDIN/ PARCELLE
+    13 ROBINET: CHEZ LE VOISIN
+    14 ROBINET: ROBIENT PUBLIC/BORNE FONTAINE
+    21 PUITS A POMPE/FORAGE
+    31 PUITS CREUSE: PROTEGE
+    32 PUITS CREUSE: PAS PROTEGE
+    41 SOURCE: SOURCE PROTEGEE
+    42 SOURCE: SOURCE NON PROTEGEE
+    51 EAU DE PLUIE
+    61 CAMION CITERNE
+    71 CHARRETTE AVEC PETITE CITERNE
+    81 EAU DE SURFACE (RIVIERE, BARRAGE, LAC, MARE, COURANT, CANAL, SYSTEME D’IRRIGATION)
+    91 EAU CONDITIONNEE: EAU EN BOUTEILLE
+    92 EAU CONDITIONNEE: EAU EN SACHET
+    96 AUTRE
+    99 NON REPONSE
+                                 ")
+############   Begin 10 - WS.sps   ############################
+
+hh <- hh %>% 
+  mutate(drinkingWater = ifelse(WS1 %in% c(11:14, 21, 31, 41, 51, 61, 71, 72, 91, 92), 1, 2))
+
+var_lab(hh$drinkingWater) = "Main source of drinking water"
+val_lab(hh$drinkingWater) = make_labels("
+  1 Improved sources
+  2 Unimproved sources
+")
+
 
 
 hh <- hh %>% 
-  mutate(drinkingWater = ifelse(WS1 %in% 
-                                  c(11:14, 21, 31, 41, 51, 61, 71, 72, 91, 92),
-                                1, 2))
-
-# `casewhen` cleaner than nested chains of ifelse for >2 conditions
-# same as SQL 'case when', but TRUE ~ val acts in place of "else"
-hh <- hh %>%
   mutate(toiletType = case_when(
     WS11 %in% c(11:13, 18, 21, 22, 31) ~ 1,
     WS11 == 95 ~ 3,
     TRUE ~ 2
   ))
-  
 
 
-hh <- hh %>% 
-  mutate(flush = NA) %>% 
-  mutate(flush = ifelse(WS11 %in% c(11:14, 18), 1, flush))
+var_lab(hh$toiletType) = "Type of sanitation facility"
+val_lab(hh$toiletType) = make_labels("
+    1 Improved
+    2 Unimproved
+    3 Open defecation (no facility, bush, field)
+                                     ")
+
+
+hh <- hh %>% mutate(flush = NA) %>% mutate(flush = case_when(
+  WS11 %in% c(1:14, 18) ~ 1
+))
+
+var_lab(hh$flush) = ""; val_lab(hh$flush) = make_labels(" 
+                                                        1 Flush/Pour flush to:
+                                                        ")
 
 
 
-hh = hh %>% mutate(sharedToilet = case_when(
+hh <- hh %>% mutate(sharedToilet = case_when(
   WS17 %in% c(1:5) ~ 1,
   WS17 %in% 97:99 ~ 9,
-  is.na(WS17) ~ 0,
-  TRUE ~ 2))
+  NA ~ 0,
+  TRUE ~ 2
+))
 
-hh = hh %>% mutate(sharedToilet = ifelse(WS16 == 2, 3, sharedToilet))
+hh <- hh %>% mutate(sharedToilet = ifelse(WS16 == 2, 3, sharedToilet))
 
-
-# visual check
-aa = hh %>% 
-  select(WS1, HH1, HH2, nhhmem, hhweightHH48, hhweight, 
-         HH48, stratum, PSU, drinkingWater, WS11)
-
-```
-
-
-
-After 10-WS include file call, resume
-
-## Include 10 - WS
-
-```{r}
-
-hh <- hh %>% 
-  mutate(improvedWater = ifelse(drinkingWater == 1, 100, 0),
-         total = 1,
-         total100 = 100)
+var_lab(hh$sharedToilet) = " "
+val_lab(hh$sharedToilet) = make_labels("
+  0 Not shared
+  1 5 households or less
+  2 More than 5 households
+  3 Public facility
+  9 DK/Missing
+                                       ")
 
 
+############   End 10 - WS.sps   ############################
 
 
-```
+hh <- hh %>% mutate(improvedWater = ifelse(drinkingWater == 1, 100, 0)) 
 
 
+var_lab(hh$improvedWater) = "Percentage using improved sources of drinking water [1]"
+var_lab(hh$WS1) = ""
 
 
-# All Value labels
-
-Variable and Value labels all at once
-
-Question if this is necessary at all in R, b/c can just as easily label R tables / figured with a list of labels when generating the tables / figures / reports, avoiding doing as we go along. 
-
-
-
-```{r}
-
-hh <- hh %>% apply_labels(
-  nhhmem = "Number of household members",
-  WS1 = c(
-#  "Tanker Truck" = 61, 
-#  "Cart with small tank" = 71, 
-#  "Bottled water [A]" = 91,  
-#  "Sachet water [A]" = 92, 
-#  "Missing" = 99,
-  # not in SPS syntax, only in CSPro SPS file.... 
-  "ROBINET: DANS LE LOGEMENT" =   11,
-   "ROBINET: DANS LA CONCESSION/JARDIN/ PARCELLE" = 12, 
-    "ROBINET: CHEZ LE VOISIN" = 13,
-    "ROBINET: ROBIENT PUBLIC/BORNE FONTAINE" = 14,
-     "PUITS A POMPE/FORAGE" = 21,
-     "PUITS CREUSE: PROTEGE" = 31,
-     "PUITS CREUSE: PAS PROTEGE" = 32,
-     "SOURCE: SOURCE PROTEGEE" = 41,
-     "SOURCE: SOURCE NON PROTEGEE" = 42,
-     "EAU DE PLUIE" = 51,
-     "CAMION CITERNE" = 61,
-     "CHARRETTE AVEC PETITE CITERNE" = 71,
-    "EAU DE SURFACE (RIVIERE, BARRAGE, LAC, MARE, COURANT, CANAL, SYSTEME D’IRRIGATION)" = 81,
-    "EAU CONDITIONNEE: EAU EN BOUTEILLE" = 91,
-    "EAU CONDITIONNEE: EAU EN SACHET" = 92,
-    "AUTRE" = 96,
-    "NON REPONSE" = 99),
-  
-  
-  drinkingWater = "Main Source of drinking water",
-  drinkingWater = c(
-    "Improved sources" = 1,
-    "Unimproved sources" = 2
-    ),
-  toiletType = "Type of sanitation facility",
-  toiletType = c(
-    "Improved" = 1,
-    "Unimproved" = 2,
-    "Open defecation (no facility, bush, field)" = 3
-    ),
-  flush = "Flush/Pour flush to:",
-  sharedToilet = c(
-    "Not shared" = 0,
-    "5 households or less" = 1,
-    "More than 5 households" = 2,
-    "Public facility" = 3,
-    "DK/Missing" = 9
-  ),
-  improvedWater = "Percentage using improved sources of drinking water [1]",
-  HH6 = c("URBAN" = 1, "RURAL" = 2)
-
-
-  
-  
-  )
-
-
-
-
-# hh <- as_factor(hh, only_labelled = TRUE)
-
-
-
-
+hh <- hh %>% mutate(total = 1, total100 = 100)
+var_lab(hh$total) = "Total"; var_lab(hh$total100) = "Total"
+val_lab(hh$total) = make_labels(" 
+                                  1
+                                ")
+val_lab(hh$total100) = make_labels("
+                                   100
+                                   ")
 
 
 ```
 
 
-# Tables
 
 
-
-
-
+Experimenting with packages, structures, table aesthetics
 
 ```{r}
 
@@ -254,79 +211,77 @@ df.tab = data.frame(tab)
 
 # 10.1.1 Table
 
-```{r, echo=F}
-
-kable(tab, digits = 0) %>% 
-  kable_styling("striped") %>% 
-  pack_rows("Total", 1, 1) %>% 
-  pack_rows(label(hh.tab$HH6), 2, 3) %>% 
-  pack_rows(label(hh.tab$HH7), 4, 10) %>% 
-  pack_rows(label(hh.tab$helevel), 11, 15) %>% 
-  pack_rows(label(hh.tab$windex5), 16, 20)
-
-```
-
-```{r}
-
-tab2 = table(c(hh.tab$HH6, hh.tab$HH7, hh.tab$helevel, hh.tab$windex5), c(rep(hh.tab$WS1, 4)))
-tab2 = table(c(hh$HH6, as_factor(hh$HH7), hh$helevel, 
-               hh$windex5), c(rep(hh$WS1, 4)))
-
-kable(tab2, digits = 0) %>% 
-  kable_styling("striped")
-
-
-
-```
 
 
 
 ```{r}
 
 
-tabf = xtabs(nn ~ WS1, hh) %>% 
+tab.1.1 = xtabs(nn ~ WS1, hh) %>% 
   rbind(xtabs(nn ~ HH6 + WS1, hh)) %>% 
   rbind(xtabs(nn ~ as_factor(HH7) + WS1, hh)) %>%
   rbind(xtabs(nn ~ as_factor(helevel) + WS1, hh)) %>% 
   rbind(xtabs(nn ~ as_factor(windex5) + WS1, hh))
 
-tabf = tabf %>% cbind(Total = rowSums(tabf))
+
+tab.improved = xtabs(nn ~ improvedWater, hh) %>% 
+  rbind(xtabs(nn ~ HH6 + improvedWater, hh)) %>% 
+  rbind(xtabs(nn ~ as_factor(HH7) + improvedWater, hh)) %>%
+  rbind(xtabs(nn ~ as_factor(helevel) + improvedWater, hh)) %>% 
+  rbind(xtabs(nn ~ as_factor(windex5) + improvedWater, hh))
+
+
+tab.1.1 = tab.1.1 %>%
+  cbind(Total = rowSums(tab.1.1)) %>% 
+  cbind(tab.improved[, 2])
+
+colnames(tab.1.1)[18] = "Percentage using drinking water from improved sources"
+
+
+
 #labels(tabf)[[1]][1] = "Total"
-tab.final = apply(tabf, 2, function(x) (x*100) / tabf[, 17]) %>% cbind(round(df.tab$Count))
+tab.1.1 = apply(tab.1.1, 2, function(x) (x*100) / tab.1.1[, 17]) %>% cbind(round(df.tab$Count))
 
 
+rownames(tab.1.1)[1] = "Total"
 
 
-tabf.rows = labels(tabf)[[1]]
-tabf.cols = labels(tabf)[[2]]
+colnames(tab.1.1)
 
 
+# columns are labeled incorrectly 
+# SPSS syntax does not match table output, even though I get correct results, they are nested in 
+# incorrect value labels / label hierarchies, can fix this as I go, need to investigate though
 
+ind <- c(1, 2, 3, 4, 5, 6, 8, 10, 11, 12, 14, 15, 7, 9, 13, 16, 17)
 
+tab.1.1[ , 1:17] = tab.1.1[ , ind]
 
 ```
 
-# SFR Table ch10 WS 1.1
+
+
+# SFR Table Ch10 WS 1.1
 
 
 ```{r, echo = F}
 
-tab.final %>% 
+tab.1.1 %>% 
   kable(digits = 1, format.args = list(big.mark = ",", scientific = FALSE)) %>% 
   kable_styling(c("striped"), font_size = 12) %>% 
-  pack_rows("Total", 1, 1) %>% 
+#  pack_rows("Total", 1, 1) %>% 
   pack_rows(label(hh.tab$HH6), 2, 3) %>% 
   pack_rows(label(hh.tab$HH7), 4, 10) %>% 
   pack_rows(label(hh.tab$helevel), 11, 15) %>% 
   pack_rows(label(hh.tab$windex5), 16, 20) %>% 
-  add_header_above(c(" " , "Eau courante" = 4, " " = 14)) %>% 
-  add_header_above(c(" ", "Sources améliorées" = 12, "Sources non améliorées" = 4, " " = 2)) %>% 
-  add_header_above(c(" ", "Source principale d'eau de boisson" = 18))
+  add_header_above(c(" " , "Eau courante" = 4, " " = 15)) %>% 
+  add_header_above(c(" ", "Sources améliorées" = 12, "Sources non améliorées" = 4, " " = 3)) %>% 
+  add_header_above(c(" ", "Source principale d'eau de boisson" = 19))
 
 
 ```
 
-# 10.1.2
+# 10 - WS.1.2
 
 Recode WS4
 
@@ -340,11 +295,15 @@ exact same as time var label....
 hh <- hh %>% 
   mutate(
     time = case_when(
-    WS4 %in% 0:30 ~ 2,
+    WS4 == 0 ~ 2,
+    WS4 %in% 1:30 ~ 2,
     WS4 %in% 31:990 ~ 3,
-    WS4 %in% 998:999 ~ 9,
-    WS1 %in% 11:13 | WS2 %in% 11:13 | WS3 %in% 1:2 ~ 1
-    )) %>% 
+    WS4 %in% 998:999 ~ 9)) %>% 
+  mutate(
+    time = case_when(
+      WS1 %in% 11:13 | WS2 %in% 11:13 | WS3 %in% 1:2 ~ 1
+    )
+  ) %>% 
   mutate(INDWS2 = 0) %>% 
   mutate(INDWS2 = case_when(
     WS1 %in% c(11, 12) ~ 100,
@@ -391,22 +350,85 @@ hh <- hh %>%
 
 ## 10.1.2 Tables
 
-```{r, eval = F}
-ctables
-  /vlabels variables = time
-           display = none
-  /table   total [c]
-         + HH6 [c]
-         + HH7 [c]
-         + helevel [c]
-         + ethnicity [c]
-         + windex5 [c]
-   by
-           drinkingWater [c] >
-             time[c][layerrowpct.validn '' f5.1]
-         + total100 [s] [mean '' f5.1]
-         + INDWS2 [s] [mean '' f5.1]
-         + nhhmem [s] [count '' f5.0]
-  /categories variables=all empty=exclude missing=exclude
+
+
+
+The general code process for creating the tables in R is as follows: 
+(there may be a more clever way to do this in one table command, but this works for now)
+
+Each `xtabs` command computes a contingency table
+We go group by group - so e.g. starting off with contingency table of `HH6` (Area) 
+vs. `WS1` (drinking water source) , or for 1.2 Area vs `time` 
+
+This one `xtabs` command is a single building block in our SFR table, we then stack these downwards
+using the `rbind` command in R, which "rowbinds" blocks together. 
+
+Naturally - Using `rbind` to rowbind two objects together (table / dataframe / list etc) requires
+exact same columns in each object, similarly `cbind` (column binding) two objects requires exact same
+rows
+
+We rowbind together downwards - `HH6` - Area, `HH7` Region, `helevel` education level, and `windex5`
+wealth quintile. For the table here in 1.2, there's an additional step of performing this sequence 
+on a filtered dataframe for `drinkingWater == 1`, then using `cbind` to bind together
+the same table but for `drinkingWater == 2`
+
+
+```{r}
+
+tab.improved.1.2 = xtabs(nn ~ as_factor(time), hh %>% filter(drinkingWater == 1)) %>% 
+  rbind(xtabs(nn ~ HH6 + as_factor(time), hh %>% filter(drinkingWater == 1))) %>% 
+  rbind(xtabs(nn ~ as_factor(HH7) + as_factor(time) , hh %>% filter(drinkingWater == 1))) %>%
+  rbind(xtabs(nn ~ as_factor(helevel) + as_factor(time), hh %>% filter(drinkingWater == 1))) %>% 
+  rbind(xtabs(nn ~ as_factor(windex5) + as_factor(time), hh %>% filter(drinkingWater == 1))) 
+
+
+tab.unimproved.1.2 = xtabs(nn ~ as_factor(time), hh %>% filter(drinkingWater == 2)) %>% 
+  rbind(xtabs(nn ~ HH6 + as_factor(time), hh %>% filter(drinkingWater == 2))) %>% 
+  rbind(xtabs(nn ~ as_factor(HH7) + as_factor(time) , hh %>% filter(drinkingWater == 2))) %>%
+  rbind(xtabs(nn ~ as_factor(helevel) + as_factor(time), hh %>% filter(drinkingWater == 2))) %>% 
+  rbind(xtabs(nn ~ as_factor(windex5) + as_factor(time), hh %>% filter(drinkingWater == 2))) 
+
+
+tab.1.2 <- cbind(tab.improved.1.2, tab.unimproved.1.2)
+tab.1.2 <- tab.1.2 %>% cbind(Total = rowSums(tab.1.2))
+
+# check
+all(round(tab.1.2[, 9]) == round(df.tab$Count)) # gut check - good
+
+tab.1.2 <- apply(tab.1.2, 2, function(x) (x * 100) / tab.1.2[ , 9]) %>% cbind(round(df.tab$Count))
+
+rownames(tab.1.2)[1] = "Total"
+
+
+
+
+
 ```
+
+# SFR Table Ch10 WS 1.2
+
+```{r}
+
+header1 = label(hh$time)
+
+tab.1.2 %>% 
+  kable(digits = 1, format.args = list(big.mark = ",", scientific = FALSE)) %>% 
+  kable_styling(c("striped"), font_size = 12) %>% 
+  pack_rows(label(hh.tab$HH6), 2, 3) %>% 
+  pack_rows(label(hh.tab$HH7), 4, 10) %>% 
+  pack_rows(label(hh.tab$helevel), 11, 15) %>% 
+  pack_rows(label(hh.tab$windex5), 16, 20) %>% 
+  add_header_above(c(" ", "Users of improved drinking water sources" = 4, 
+                     "Users of unimproved drinking water sources" = 4,
+                     " " = 2)) %>% 
+  add_header_above(c(" ", "Time to source of drinking water" = 8, " " = 2))
+  
+
+
+
+```
+
+
+
+
 
