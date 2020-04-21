@@ -166,7 +166,7 @@ val_lab(hh$total100) = make_labels("
 
 Experimenting with packages, structures, table aesthetics
 
-```{r}
+```{r, eval = T}
 
 hh.tab <- hh %>% 
   mutate(nn = nhhmem * hhweightHH48) %>% 
@@ -217,36 +217,39 @@ df.tab = data.frame(tab)
 ```{r}
 
 
-tab.1.1 = xtabs(nn ~ WS1, hh) %>% 
-  rbind(xtabs(nn ~ HH6 + WS1, hh)) %>% 
-  rbind(xtabs(nn ~ as_factor(HH7) + WS1, hh)) %>%
-  rbind(xtabs(nn ~ as_factor(helevel) + WS1, hh)) %>% 
-  rbind(xtabs(nn ~ as_factor(windex5) + WS1, hh))
+tab.1.1 = xtabs(nhhmem ~ WS1, hh) %>% 
+  rbind(xtabs(nhhmem ~ as_factor(HH6) + WS1, hh)) %>% 
+  rbind(xtabs(nhhmem ~ as_factor(HH7) + WS1, hh)) %>%
+  rbind(xtabs(nhhmem ~ as_factor(helevel) + WS1, hh)) %>% 
+  rbind(xtabs(nhhmem ~ as_factor(windex5) + WS1, hh))
 
 
-tab.improved = xtabs(nn ~ improvedWater, hh) %>% 
-  rbind(xtabs(nn ~ HH6 + improvedWater, hh)) %>% 
-  rbind(xtabs(nn ~ as_factor(HH7) + improvedWater, hh)) %>%
-  rbind(xtabs(nn ~ as_factor(helevel) + improvedWater, hh)) %>% 
-  rbind(xtabs(nn ~ as_factor(windex5) + improvedWater, hh))
+tab.improved = xtabs(nhhmem ~ improvedWater, hh) %>% 
+  rbind(xtabs(nhhmem ~ as_factor(HH6) + improvedWater, hh)) %>% 
+  rbind(xtabs(nhhmem ~ as_factor(HH7) + improvedWater, hh)) %>%
+  rbind(xtabs(nhhmem ~ as_factor(helevel) + improvedWater, hh)) %>% 
+  rbind(xtabs(nhhmem ~ as_factor(windex5) + improvedWater, hh))
 
 
 tab.1.1 = tab.1.1 %>%
   cbind(Total = rowSums(tab.1.1)) %>% 
   cbind(tab.improved[, 2])
 
+N = round(tab.1.1[ , 17])
+
 colnames(tab.1.1)[18] = "Percentage using drinking water from improved sources"
 
 
 
 #labels(tabf)[[1]][1] = "Total"
-tab.1.1 = apply(tab.1.1, 2, function(x) (x*100) / tab.1.1[, 17]) %>% cbind(round(df.tab$Count))
+tab.1.1 = apply(tab.1.1, 2, function(x) (x*100) / tab.1.1[, 17])
 
+tab.1.1 <- tab.1.1 %>% cbind(N); colnames(tab.1.1)[18:19] = c("Pourcen-tage utilisant de l'eau de boisson de sources améliorées1", "Nombre de membres des ménages ")
 
 rownames(tab.1.1)[1] = "Total"
 
 
-colnames(tab.1.1)
+
 
 
 # columns are labeled incorrectly 
