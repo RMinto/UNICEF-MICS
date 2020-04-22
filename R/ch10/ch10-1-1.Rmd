@@ -271,7 +271,7 @@ tab.1.1[ , 1:17] = tab.1.1[ , ind]
 
 tab.1.1 %>% 
   kable(digits = 1, format.args = list(big.mark = ",", scientific = FALSE)) %>% 
-  kable_styling(c("striped"), font_size = 12) %>% 
+  kable_styling(c("striped"), font_size = 11) %>% 
 #  pack_rows("Total", 1, 1) %>% 
   pack_rows(label(hh.tab$HH6), 2, 3) %>% 
   pack_rows(label(hh.tab$HH7), 4, 10) %>% 
