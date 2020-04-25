@@ -1,0 +1,763 @@
+---
+title: "Ch10 - WS 1.1 - 1.3"
+author: "Reid Minto"
+date: "April 22, 2020"
+output: word_document
+always_allow_html: true
+---
+
+
+
+1. Producing two more tables: ws1.2 and ws1.3 as well
+
+2. Integrate in the code suppression and parenthesizing rules:
+  a. Where the unweighted count of the denominator is less than 25 cases the value should be suppressed and replaced with an asterisk *
+  b. Where the unweighted count is between 25-49 the values should be parenthesized ().
+ 
+
+3. Compile the three tables’ scripts into 1 markdown that can produce an SFR chapter (albeit for only 3 tables) in word document
+
+a. It will be paramount here that the table formatting in the original SFR reports are maintained.
+
+```{r, warning = F, message = F}
+
+library(tidyverse); library(haven); library(lubridate);
+library(knitr); library(kableExtra);
+library(Hmisc); library(survey)
+library(expss); library(here); library(gmodels)
+library(flextable); library(formattable)
+library(prettydoc); library(officer)
+
+library(tableone); library(sjPlot); library(srvyr)
+
+```
+ 
+# Import data
+
+`here` function navigates you to top level Rproj directory
+
+
+
+```{r}
+# haven library called above has read_sav function for reading in .sav / .sps etc
+# files from other languages
+here()
+hh <- read_sav(here("Data/Tunisia_hh.sav"))
+# hh <- as_factor(hh, only_labelled = TRUE)
+
+
+
+
+```
+
+Filter only cases where hh interview = 1, create a variable `hhweightHH48` by multiplying 
+`HH48` and `hhweight`, number of hh members by sample weight
+
+
+Note: this is just first pass rough draft / run through - much of this looks like it can be consolidated into a single chunk / a single function execute per section from what I've seen so far, but broken up in first pass
+
+
+
+
+# 10 - WS.1.1
+
+```{r}
+
+hh <- hh %>% filter(HH46 == 1) %>% 
+  mutate(hhweightHH48 = HH48 * hhweight) %>% mutate(nhhmem = 1 * hhweightHH48)
+
+var_lab(hh$nhhmem) = "Number of household members"; val_lab(hh$nhhmem) = make_labels("
+                                                                                     1
+                                                                                     ")
+
+
+
+var_lab(hh$WS1) = "Source principale d'eau de boisson"
+val_lab(hh$WS1) = make_labels("
+    11 DANS LE LOGEMENT
+    12 DANS LA CONCESSION/JARDIN/ PARCELLE
+    13 CHEZ LE VOISIN
+    14 ROBIENT PUBLIC/BORNE FONTAINE
+    21 PUITS A POMPE/FORAGE
+    31 PROTEGE
+    32 PAS PROTEGE
+    41 SOURCE PROTEGEE
+    42 SOURCE NON PROTEGEE
+    51 EAU DE PLUIE
+    61 CAMION CITERNE
+    71 CHARRETTE AVEC PETITE CITERNE
+    81 EAU DE SURFACE (RIVIERE, BARRAGE, LAC, MARE, COURANT, CANAL, SYSTEME D’IRRIGATION)
+    91 EAU EN BOUTEILLE
+    92 EAU EN SACHET
+    96 AUTRE
+    99 NON REPONSE
+                                 ")
+############   Begin 10 - WS.sps   ############################
+
+hh <- hh %>% 
+  mutate(drinkingWater = ifelse(WS1 %in% c(11:14, 21, 31, 41, 51, 61, 71, 72, 91, 92), 1, 2))
+
+var_lab(hh$drinkingWater) = "Main source of drinking water"
+val_lab(hh$drinkingWater) = make_labels("
+  1 Improved sources
+  2 Unimproved sources
+")
+
+
+
+hh <- hh %>% 
+  mutate(toiletType = case_when(
+    WS11 %in% c(11:13, 18, 21, 22, 31) ~ 1,
+    WS11 == 95 ~ 3,
+    TRUE ~ 2
+  ))
+
+
+var_lab(hh$toiletType) = "Type of sanitation facility"
+val_lab(hh$toiletType) = make_labels("
+    1 Improved
+    2 Unimproved
+    3 Open defecation (no facility, bush, field)
+                                     ")
+
+
+hh <- hh %>% mutate(flush = NA) %>% mutate(flush = case_when(
+  WS11 %in% c(1:14, 18) ~ 1
+))
+
+var_lab(hh$flush) = ""; val_lab(hh$flush) = make_labels(" 
+                                                        1 Flush/Pour flush to:
+                                                        ")
+
+
+
+hh <- hh %>% mutate(sharedToilet = case_when(
+  WS17 %in% c(1:5) ~ 1,
+  WS17 %in% 97:99 ~ 9,
+  NA ~ 0,
+  TRUE ~ 2
+))
+
+hh <- hh %>% mutate(sharedToilet = ifelse(WS16 == 2, 3, sharedToilet))
+
+var_lab(hh$sharedToilet) = " "
+val_lab(hh$sharedToilet) = make_labels("
+  0 Not shared
+  1 5 households or less
+  2 More than 5 households
+  3 Public facility
+  9 DK/Missing
+                                       ")
+
+
+############   End 10 - WS.sps   ############################
+
+
+hh <- hh %>% mutate(improvedWater = ifelse(drinkingWater == 1, 100, 0)) 
+
+
+var_lab(hh$improvedWater) = "Percentage using improved sources of drinking water [1]"
+var_lab(hh$WS1) = ""
+
+
+hh <- hh %>% mutate(total = 1, total100 = 100)
+var_lab(hh$total) = "Total"; var_lab(hh$total100) = "Total"
+val_lab(hh$total) = make_labels(" 
+                                  1
+                                ")
+val_lab(hh$total100) = make_labels("
+                                   100
+                                   ")
+
+
+```
+
+
+
+
+
+
+
+# 10.1.1 Table
+
+
+
+
+```{r}
+
+
+tab.1.1 = xtabs(nhhmem ~ WS1, hh) %>% 
+  rbind(xtabs(nhhmem ~ as_factor(HH6) + WS1, hh)) %>% 
+  rbind(xtabs(nhhmem ~ as_factor(HH7) + WS1, hh)) %>%
+  rbind(xtabs(nhhmem ~ as_factor(helevel) + WS1, hh)) %>% 
+  rbind(xtabs(nhhmem ~ as_factor(windex5) + WS1, hh))
+
+
+tab.improved = xtabs(nhhmem ~ improvedWater, hh) %>% 
+  rbind(xtabs(nhhmem ~ as_factor(HH6) + improvedWater, hh)) %>% 
+  rbind(xtabs(nhhmem ~ as_factor(HH7) + improvedWater, hh)) %>%
+  rbind(xtabs(nhhmem ~ as_factor(helevel) + improvedWater, hh)) %>% 
+  rbind(xtabs(nhhmem ~ as_factor(windex5) + improvedWater, hh))
+
+
+tab.1.1 = tab.1.1 %>%
+  cbind(Total = rowSums(tab.1.1)) %>% 
+  cbind(tab.improved[, 2])
+
+N = round(tab.1.1[ , 17])
+
+colnames(tab.1.1)[18] = "Percentage using drinking water from improved sources"
+
+
+
+#labels(tabf)[[1]][1] = "Total"
+tab.1.1 = apply(tab.1.1, 2, function(x) (x*100) / tab.1.1[, 17])
+
+tab.1.1 <- tab.1.1 %>% cbind(N); colnames(tab.1.1)[18:19] = c("Pourcen-tage utilisant de l'eau de boisson de sources améliorées1", "Nombre de membres des ménages ")
+
+rownames(tab.1.1)[1] = "Total"
+
+
+
+
+
+# columns are labeled incorrectly 
+# SPSS syntax does not match table output, even though I get correct results, they are nested in 
+# incorrect value labels / label hierarchies, can fix this as I go, need to investigate though
+
+ind <- c(1, 2, 3, 4, 5, 6, 8, 10, 11, 12, 14, 15, 7, 9, 13, 16, 17)
+
+tab.1.1[ , 1:17] = tab.1.1[ , ind]
+
+colnames(tab.1.1)[1:17] = colnames(tab.1.1)[ind]
+
+```
+
+
+
+
+# SFR Table Ch10 WS 1.1
+
+
+```{r, echo = T, eval = T}
+
+tab.1.1 %>% 
+  kable(format = "latex", digits = 1, format.args = list(big.mark = ",", scientific = FALSE)) %>% 
+  kable_styling(c("striped"), font_size = 11) %>% 
+#  pack_rows("Total", 1, 1) %>% 
+  pack_rows(label(hh$HH6), 2, 3) %>% 
+  pack_rows(label(hh$HH7), 4, 10) %>% 
+  pack_rows(label(hh$helevel), 11, 15) %>% 
+  pack_rows(label(hh$windex5), 16, 20) %>% 
+  add_header_above(c(" " , "Eau courante" = 4, " " = 15)) %>% 
+  add_header_above(c(" ", "Sources améliorées" = 12, "Sources non améliorées" = 4, " " = 3)) %>% 
+  add_header_above(c(" ", "Source principale d'eau de boisson" = 19))
+
+
+a = data.frame(tab.1.1); 
+
+a = lapply(a, function(x) round(x, digits = 1)) %>% data.frame(); colnames(a) = colnames(tab.1.1)
+rownames(a) = rownames(tab.1.1)
+
+aa = colnames(a)
+
+
+ft = flextable(a %>% rownames_to_column(" ")) %>% autofit() %>% 
+  fontsize(part = "all", size = 4) %>% bold(part = "header") %>% 
+  add_header(`DANS LE LOGEMENT` = "Eau courante",
+             `DANS LA CONCESSION/JARDIN/ PARCELLE` = "Eau courante",
+             `CHEZ LE VOISIN` = "Eau courante",
+             `ROBIENT PUBLIC/BORNE FONTAINE` = "Eau courante") %>% 
+  add_header(
+  `DANS LE LOGEMENT` = "Sources améliorées",
+  `DANS LA CONCESSION/JARDIN/ PARCELLE` = "Sources améliorées",
+  `CHEZ LE VOISIN` = "Sources améliorées",
+  `ROBIENT PUBLIC/BORNE FONTAINE` = "Sources améliorées", 
+  `PUITS A POMPE/FORAGE` = "Sources améliorées",
+  `PROTEGE` = "Sources améliorées",
+  `SOURCE PROTEGEE` = "Sources améliorées",
+  `EAU DE PLUIE` = "Sources améliorées",
+  `CAMION CITERNE` = "Sources améliorées",
+  `CHARRETTE AVEC PETITE CITERNE` = "Sources améliorées",
+  `EAU EN BOUTEILLE` = "Sources améliorées",
+  `EAU EN SACHET` = "Sources améliorées",
+  `PAS PROTEGE` = "Sources non améliorées",
+  `SOURCE NON PROTEGEE` = "Sources non améliorées",
+  `EAU DE SURFACE (RIVIERE, BARRAGE, LAC, MARE, COURANT, CANAL, SYSTEME D’IRRIGATION)` = "Sources non améliorées",
+  `AUTRE` = "Sources non améliorées"
+  ) %>% 
+  add_header(
+  `DANS LE LOGEMENT` = "Source principale d'eau de boisson",
+  `DANS LA CONCESSION/JARDIN/ PARCELLE` = "Source principale d'eau de boisson",
+  `CHEZ LE VOISIN` = "Source principale d'eau de boisson",
+  `ROBIENT PUBLIC/BORNE FONTAINE` = "Source principale d'eau de boisson", 
+  `PUITS A POMPE/FORAGE` = "Source principale d'eau de boisson",
+  `PROTEGE` = "Source principale d'eau de boisson",
+  `SOURCE PROTEGEE` = "Source principale d'eau de boisson",
+  `EAU DE PLUIE` = "Source principale d'eau de boisson",
+  `CAMION CITERNE` = "Source principale d'eau de boisson",
+  `CHARRETTE AVEC PETITE CITERNE` = "Source principale d'eau de boisson",
+  `EAU EN BOUTEILLE` = "Source principale d'eau de boisson",
+  `EAU EN SACHET` = "Source principale d'eau de boisson",
+  `PAS PROTEGE` = "Source principale d'eau de boisson",
+  `SOURCE NON PROTEGEE` = "Source principale d'eau de boisson",
+  `EAU DE SURFACE (RIVIERE, BARRAGE, LAC, MARE, COURANT, CANAL, SYSTEME D’IRRIGATION)` = "Source principale d'eau de boisson",
+  `AUTRE` = "Source principale d'eau de boisson"
+  ) %>% 
+  merge_h(i = 1:3, part = "header") %>% 
+  theme_zebra() %>% 
+  align(align = "center", part = "all") %>% fontsize(part = "header", size = 5)
+  #border_inner_v(part = "all", border = fp_border(color = "gray")) %>% fix_border_issues()
+ 
+ 
+ 
+ 
+   
+
+#  add_header(`DANS LE LOGEMENT` = "Eau courante",
+#             `DANS LA CONCESSION/JARDIN/ PARCELLE` = "Eau courante",
+#             `CHEZ LE VOISIN` = "Eau courante",
+#             `ROBIENT PUBLIC/BORNE FONTAINE` = "Eau courante") 
+
+FitFlextableToPage <- function(ft, pgwidth = 8){
+
+  ft_out <- ft %>% autofit()
+
+  ft_out <- width(ft_out, width = dim(ft_out)$widths*pgwidth /(flextable_dim(ft_out)$widths))
+  return(ft_out)
+}
+
+ FitFlextableToPage(ft, pgwidth = 8)
+
+
+
+```
+
+
+
+
+
+
+
+
+
+# 10 - WS.1.2
+
+
+Reminder: change ALL case whens into nested ifelse, case_when function just burned 
+me on 1.2 table...
+
+```{r}
+
+hh <- read_sav(here("Data/Tunisia_hh.sav"))
+
+hh <- hh %>% filter(HH46 == 1) %>% mutate(hhweightHH48 = HH48 * hhweight) %>% 
+  mutate(nhhmem = 1 * hhweightHH48)
+
+var_lab(hh$nhhmem) = "Number of household members"; val_lab(hh$nhhmem) = make_labels("
+                                                                                     1
+                                                                                     ")
+# reload data as start over as in SPS syntax file
+
+hh <- hh %>% mutate(time = ifelse(WS4 %in% 0:30, 2, 
+                                  ifelse(WS4 %in% 31:990, 3,
+                                         ifelse(WS4 %in% c(998, 999), 9,
+                                                WS4)))) %>% 
+  mutate(time = ifelse(WS1 %in% 11:13 |
+                         WS2 %in% 11:13 |
+                         WS3 %in% 1:2, 1, time))
+
+
+
+
+var_lab(hh$time) = "Time to source of drinking water"; val_lab(hh$time) = make_labels(" 
+    1 Water on premises
+    2 Up to and including 30 minutes [A]
+    3 More than 30 minutes
+    9 DK/Missing
+    ")
+
+
+#####################      BEGIN 10 - WS.SPS    ################################
+
+
+hh <- hh %>% 
+  mutate(drinkingWater = ifelse(WS1 %in% c(11:14, 21, 31, 41, 51, 61, 71, 72, 91, 92), 1, 2))
+
+var_lab(hh$drinkingWater) = "Main source of drinking water"
+val_lab(hh$drinkingWater) = make_labels("
+  1 Improved sources
+  2 Unimproved sources
+")
+
+
+
+hh <- hh %>% 
+  mutate(toiletType = case_when(
+    WS11 %in% c(11:13, 18, 21, 22, 31) ~ 1,
+    WS11 == 95 ~ 3,
+    TRUE ~ 2
+  ))
+
+
+var_lab(hh$toiletType) = "Type of sanitation facility"
+val_lab(hh$toiletType) = make_labels("
+    1 Improved
+    2 Unimproved
+    3 Open defecation (no facility, bush, field)
+                                     ")
+
+
+hh <- hh %>% mutate(flush = NA) %>% mutate(flush = case_when(
+  WS11 %in% c(1:14, 18) ~ 1
+))
+
+var_lab(hh$flush) = ""; val_lab(hh$flush) = make_labels(" 
+                                                        1 Flush/Pour flush to:
+                                                        ")
+
+
+
+hh <- hh %>% mutate(sharedToilet = case_when(
+  WS17 %in% c(1:5) ~ 1,
+  WS17 %in% 97:99 ~ 9,
+  NA ~ 0,
+  TRUE ~ 2
+))
+
+hh <- hh %>% mutate(sharedToilet = ifelse(WS16 == 2, 3, sharedToilet))
+
+var_lab(hh$sharedToilet) = " "
+val_lab(hh$sharedToilet) = make_labels("
+  0 Not shared
+  1 5 households or less
+  2 More than 5 households
+  3 Public facility
+  9 DK/Missing
+                                       ")
+
+
+#####################     END 10 - WS.SPS      ################################
+
+var_lab(hh$drinkingWater) = "Time to source of drinking Water"
+val_lab(hh$drinkingWater) = make_labels("
+      1 Users of improved drinking water sources 
+      2 Users of unimproved drinking water sources
+                                        ")
+
+hh <- hh %>% 
+  mutate(INDWS2 = 0) %>% 
+  mutate(INDWS2 = case_when(
+    WS1 %in% c(11, 12) ~ 100,
+    (WS1 %in% c(61, 71, 72)) & (WS4 <= 30) ~ 100,
+    (WS1 %in% c(13, 14, 21, 31, 41, 51)) & (WS3 %in% 1:2 | WS4 <= 30) ~ 100,
+    (WS1 %in% 91:92) & (WS2 %in% 11:12) ~ 100,
+    (WS1 %in% 91:92) & (WS2 %in% c(61, 71, 72) & WS4 <= 30) ~ 100,
+    (WS1 %in% 91:92) & (WS2 %in% c(13, 14, 21, 31, 41, 51)) & (WS3 %in% 1:2 | WS4 <= 30) ~ 100
+  )  )
+
+hh$total = 1
+var_lab(hh$INDWS2) = "Percentage using basic drinking water services [1]"
+var_lab(hh$total) = "Total"; val_lab(hh$total) = make_labels("
+                                                             1 
+                                                             ")
+
+
+
+```
+
+
+
+
+
+## 10.1.2 Tables
+
+
+
+
+The general code process for creating the tables in R is as follows: 
+(there may be a more clever way to do this in one table command, but this works for now)
+
+Each `xtabs` command computes a contingency table
+We go group by group - so e.g. starting off with contingency table of `HH6` (Area) 
+vs. `WS1` (drinking water source) , or for 1.2 Area vs `time` 
+
+This one `xtabs` command is a single building block in our SFR table, we then stack these downwards
+using the `rbind` command in R, which "rowbinds" blocks together. 
+
+Naturally - Using `rbind` to rowbind two objects together (table / dataframe / list etc) requires
+exact same columns in each object, similarly `cbind` (column binding) two objects requires exact same
+rows
+
+We rowbind together downwards - `HH6` - Area, `HH7` Region, `helevel` education level, and `windex5`
+wealth quintile. For the table here in 1.2, there's an additional step of performing this sequence 
+on a filtered dataframe for `drinkingWater == 1`, then using `cbind` to bind together
+the same table but for `drinkingWater == 2`
+
+
+```{r}
+
+df.unweighted <- hh %>% summarize(Count = sum(HH48)) %>% 
+  rbind.data.frame(hh %>% group_by(as_factor(HH6)) %>% 
+                     summarize(Count = sum(HH48)) %>% select(Count)) %>% 
+  rbind.data.frame(hh %>% group_by(as_factor(HH7)) %>% 
+                     summarize(Count = sum(HH48)) %>% select(Count)) %>% 
+  rbind.data.frame(hh %>% group_by(as_factor(helevel)) %>% 
+                     summarize(Count = sum(HH48)) %>% select(Count)) %>% 
+  rbind.data.frame(hh %>% group_by(as_factor(windex5)) %>% 
+                     summarize(Count = sum(HH48)) %>% select(Count)); 
+
+df.unweighted$Count = round(df.unweighted$Count); 
+rownames(df.unweighted) = c("Total", levels(as_factor(hh$HH6)), levels(as_factor(hh$HH7)), levels(as_factor(hh$helevel)), 
+                levels(as_factor(hh$windex5)))
+
+
+
+
+# to be turned into function - this is likely common task in every chapter...
+N <- hh %>% summarize(Count = sum(nhhmem)) %>% 
+  rbind.data.frame(hh %>% group_by(as_factor(HH6)) %>% 
+                     summarize(Count = sum(nhhmem)) %>% select(Count)) %>% 
+  rbind.data.frame(hh %>% group_by(as_factor(HH7)) %>% 
+                     summarize(Count = sum(nhhmem)) %>% select(Count)) %>% 
+  rbind.data.frame(hh %>% group_by(as_factor(helevel)) %>% 
+                     summarize(Count = sum(nhhmem)) %>% select(Count)) %>% 
+  rbind.data.frame(hh %>% group_by(as_factor(windex5)) %>% 
+                     summarize(Count = sum(nhhmem)) %>% select(Count)); 
+
+N$Count = round(N$Count)
+N <- N %>% mutate(Total = Count)
+N <- data.frame(N); colnames(N)[1] = c("Number of household members")
+rownames(N) = c("Total", levels(as_factor(hh$HH6)), levels(as_factor(hh$HH7)), levels(as_factor(hh$helevel)), 
+                levels(as_factor(hh$windex5)))
+
+
+
+
+tab.improved = xtabs(nhhmem ~ as_factor(time), hh %>% filter(drinkingWater == 1)) %>% 
+  rbind(xtabs(nhhmem ~ as_factor(HH6) + as_factor(time), hh %>% filter(drinkingWater == 1))) %>% 
+  rbind(xtabs(nhhmem ~ as_factor(HH7) + as_factor(time), hh %>% filter(drinkingWater == 1))) %>%
+  rbind(xtabs(nhhmem ~ as_factor(helevel) + as_factor(time), hh %>% filter(drinkingWater == 1))) %>% 
+  rbind(xtabs(nhhmem ~ as_factor(windex5) + as_factor(time), hh %>% filter(drinkingWater == 1)))
+
+
+tab.unimproved = xtabs(nhhmem ~ as_factor(time), hh %>% filter(drinkingWater == 2)) %>% 
+  rbind(xtabs(nhhmem ~ as_factor(HH6) + as_factor(time), hh %>% filter(drinkingWater == 2))) %>% 
+  rbind(xtabs(nhhmem ~ as_factor(HH7) + as_factor(time), hh %>% filter(drinkingWater == 2))) %>%
+  rbind(xtabs(nhhmem ~ as_factor(helevel) + as_factor(time), hh %>% filter(drinkingWater == 2))) %>% 
+  rbind(xtabs(nhhmem ~ as_factor(windex5) + as_factor(time), hh %>% filter(drinkingWater == 2)))
+
+
+tab.basic = xtabs(nhhmem ~ as_factor(INDWS2), hh) %>% 
+  rbind(xtabs(nhhmem ~ as_factor(HH6) + as_factor(INDWS2), hh)) %>% 
+  rbind(xtabs(nhhmem ~ as_factor(HH7) + as_factor(INDWS2), hh)) %>%
+  rbind(xtabs(nhhmem ~ as_factor(helevel) + as_factor(INDWS2), hh)) %>% 
+  rbind(xtabs(nhhmem ~ as_factor(windex5) + as_factor(INDWS2), hh))
+
+
+tab.1.2 = cbind(tab.improved, tab.unimproved, N$Total, tab.basic, N$`Number of household members`)
+
+
+
+tab.1.2 = apply(tab.1.2[ , 1:(ncol(tab.1.2)-1)], 2, function(x) (x * 100) / tab.1.2[ , ncol(tab.1.2) - 2]) %>% cbind(N$`Number of household members`)
+
+colnames(tab.1.2)[(ncol(tab.1.2) - 2):ncol(tab.1.2)] = c("Total",
+                            "Percentage using basic drinking water services [1]",
+                            "Number of household members")
+
+
+
+rownames(tab.1.2)[1] = "Total"
+
+
+
+
+
+```
+
+
+
+### parenth function
+
+```{r}
+
+paren_fun <- function(df) {
+  df <- df %>% mutate(less_25 = ifelse(Count <= 25, 1, ))
+}
+
+
+```
+
+
+
+# SFR Table Ch10 WS 1.2
+
+
+
+```{r, eval = T}
+
+header1 = label(hh$time)
+
+tab.1.2 %>% 
+  kable(digits = 1, format.args = list(big.mark = ",", scientific = FALSE)) %>% 
+  kable_styling(c("striped"), font_size = 12) %>% 
+  pack_rows(label(hh$HH6), 2, 3) %>% 
+  pack_rows(label(hh$HH7), 4, 10) %>% 
+  pack_rows(label(hh$helevel), 11, 15) %>% 
+  pack_rows(label(hh$windex5), 16, 20) %>% 
+  add_header_above(c(" ", "Users of improved drinking water sources" = 4, 
+                     "Users of unimproved drinking water sources" = 4,
+                     " " = 3)) %>% 
+  add_header_above(c(" ", "Time to source of drinking water" = 8, " " = 3))
+  
+
+
+
+```
+
+
+
+
+```{r}
+
+
+a = data.frame(tab.1.2); 
+
+a = lapply(a, function(x) round(x, digits = 1)) %>% data.frame(); colnames(a) = colnames(tab.1.2)
+rownames(a) = rownames(tab.1.2)
+colnames(a)[5:8] = c(" Water on premises", " Up to and including 30 minutes [A]",
+                     " More than 30 minutes", " DK/Missing")
+aa = colnames(a)
+
+
+ft = flextable(a %>% rownames_to_column(" ")) %>% autofit() %>% 
+  fontsize(part = "all", size = 4) %>% bold(part = "header") %>% 
+  add_header(`Water on premises` = "Users of improved drinking water sources",
+             `Up to and including 30 minutes [A]` = "Users of improved drinking water sources",
+             `More than 30 minutes` = "Users of improved drinking water sources",
+             `DK/Missing` = "Users of improved drinking water sources",
+             ` Water on premises` = "Users of unimproved drinking water sources",
+             ` Up to and including 30 minutes [A]` = "Users of unimproved drinking water sources",
+             ` More than 30 minutes` = "Users of unimproved drinking water sources",
+             ` DK/Missing` = "Users of unimproved drinking water sources") %>% 
+add_header(
+             `Water on premises` = "Time to source of drinking water",
+             `Up to and including 30 minutes [A]` = "Time to source of drinking water",
+             `More than 30 minutes` = "Time to source of drinking water",
+             `DK/Missing` = "Time to source of drinking water",
+             ` Water on premises` = "Time to source of drinking water",
+             ` Up to and including 30 minutes [A]` = "Time to source of drinking water",
+             ` More than 30 minutes` = "Time to source of drinking water",
+             ` DK/Missing` = "Time to source of drinking water"
+) %>% 
+  merge_h(i = 1:3, part = "header") %>% 
+  theme_zebra() %>% 
+  align(align = "center", part = "all") %>% fontsize(part = "header", size = 5)
+  #border_inner_v(part = "all", border = fp_border(color = "gray")) %>% fix_border_issues()
+ 
+ 
+ 
+ 
+   
+
+#  add_header(`DANS LE LOGEMENT` = "Eau courante",
+#             `DANS LA CONCESSION/JARDIN/ PARCELLE` = "Eau courante",
+#             `CHEZ LE VOISIN` = "Eau courante",
+#             `ROBIENT PUBLIC/BORNE FONTAINE` = "Eau courante") 
+
+FitFlextableToPage <- function(ft, pgwidth = 8){
+
+  ft_out <- ft %>% autofit()
+
+  ft_out <- width(ft_out, width = dim(ft_out)$widths*pgwidth /(flextable_dim(ft_out)$widths))
+  return(ft_out)
+}
+
+ FitFlextableToPage(ft, pgwidth = 8)
+
+```
+
+
+
+
+# flextables experimentation
+
+```{r, eval = F}
+
+a = data.frame(tab.1.1); 
+
+a = lapply(a, function(x) round(x, digits = 1)) %>% data.frame(); colnames(a) = colnames(tab.1.1)
+rownames(a) = rownames(tab.1.1)
+
+flextable(a %>% rownames_to_column("a"), col_keys = names(a)) %>% autofit() %>% 
+  add_header_lines("Users of improved drinking water sources") %>% 
+  fontsize(part = "header", size = 14) %>% bold(part = "header") %>% 
+  border_inner_v(border = fp_border(color = "gray"), part = "all")
+
+
+aa = colnames(a)
+
+flextable(a %>% rownames_to_column(" ")) %>% autofit() %>% 
+  fontsize(part = "header", size = 10) %>% bold(part = "header") %>% 
+  fontsize(part = "body", size = 7) %>% 
+  add_header(`DANS LE LOGEMENT` = "Eau courante") %>% 
+  merge_at(i = 1, j = 2:4, part = "header") %>% 
+  add_header(`PROTEGE` = "Sources améliorées",
+             `AUTRE` = "Sources non améliorées") %>% 
+ # merge_at(i = 1, j = 5:12, part = "header") %>% 
+  add_header(`CAMION CITERNE` = "Source principale d'eau de boisson") %>% 
+  border_inner_v(border = fp_border(color = "gray")) %>% theme_zebra()
+
+
+```
+
+```{r, eval = F}
+
+flextable(a) %>% set_header_df(mapping = b, key = "col_keys")
+
+ft <- flextable( head( iris ) ); ft
+ft <- add_footer_lines(ft, values = "blah blah"); ft
+ft <- add_footer_lines(ft, values = c("blah 1", "blah 2"))
+autofit(ft)
+ft <- flextable( head( iris ) ); ft
+ft <- add_header_lines(ft, values = "blah blah"); ft
+ft <- add_header_lines(ft, values = c("blah 1", "blah 2")); ft
+autofit(ft)
+
+
+```
+
+
+
+```{r, eval = F}
+
+atypology <- data.frame(
+  col_keys = colnames(a),
+  what = c(rep("a", 4), rep(" ", 15)), stringsAsFactors = FALSE)
+
+
+typology <- data.frame(
+  col_keys = c( "Sepal.Length", "Sepal.Width", "Petal.Length",
+                "Petal.Width", "Species" ),
+  what = c("Sepal", "Sepal", "Petal", "Petal", "Species"),
+  measure = c("Length", "Width", "Length", "Width", "Species"),
+  stringsAsFactors = FALSE )
+
+ft <- flextable( head( iris ))
+ft <- set_header_df(ft, mapping = typology, key = "col_keys" )
+ft <- merge_h(ft, part = "header")
+ft <- merge_v(ft, j = "Species", part = "header")
+ft <- theme_vanilla(ft)
+ft
+
+typology <- data.frame(
+  col_keys = c( "Sepal.Length", "Sepal.Width", "Petal.Length",
+                "Petal.Width", "Species" ),
+  unit = c("(cm)", "(cm)", "(cm)", "(cm)", ""),
+  stringsAsFactors = FALSE )
+ft <- set_footer_df(ft, mapping = typology, key = "col_keys" )
+ft <- italic(ft, italic = TRUE, part = "footer" )
+ft <- theme_booktabs(ft)
+ft
+```
+

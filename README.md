@@ -36,6 +36,15 @@ Jose: Use CSPro and just go with whatever is easiest in R, i.e. disregard SPSS r
 1. Match WS-1.1 as closely to report as possible for full 1.1 section
 2. then proceed forward with next two sections to start seeing how much can be rolled into automation. 
 
+
+- Due Before 5/1
+
+1. Producing two more tables: ws1.2 and ws1.3 as well
+
+
+
+
+
 # Tables
 
 Below are the direct markdown links to the tables

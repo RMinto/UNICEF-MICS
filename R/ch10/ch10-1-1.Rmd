@@ -267,7 +267,7 @@ tab.1.1[ , 1:17] = tab.1.1[ , ind]
 # SFR Table Ch10 WS 1.1
 
 
-```{r, echo = F}
+```{r, echo = F, eval = F}
 
 tab.1.1 %>% 
   kable(digits = 1, format.args = list(big.mark = ",", scientific = FALSE)) %>% 
@@ -283,6 +283,19 @@ tab.1.1 %>%
 
 
 ```
+
+
+
+```{r}
+flextable(a)
+
+
+
+```
+
+
+
+
 
 # 10 - WS.1.2
 
