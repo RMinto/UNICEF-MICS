@@ -27,7 +27,7 @@ library(Hmisc); library(survey)
 library(expss); library(here); library(gmodels)
 library(flextable); library(formattable)
 library(prettydoc); library(officer)
-
+library(ReporteRs)
 library(tableone); library(sjPlot); library(srvyr)
 
 ```
@@ -239,7 +239,26 @@ colnames(tab.1.1)[1:17] = colnames(tab.1.1)[ind]
 # SFR Table Ch10 WS 1.1
 
 
-```{r, echo = T, eval = T}
+```{r}
+
+
+tab.1.1 %>% 
+  kable(digits = 1, format.args = list(big.mark = ",", scientific = FALSE)) %>% 
+  kable_styling(c("striped"), font_size = 11) %>% 
+#  pack_rows("Total", 1, 1) %>% 
+  pack_rows(label(hh$HH6), 2, 3) %>% 
+  pack_rows(label(hh$HH7), 4, 10) %>% 
+  pack_rows(label(hh$helevel), 11, 15) %>% 
+  pack_rows(label(hh$windex5), 16, 20) %>% 
+  add_header_above(c(" " , "Eau courante" = 4, " " = 15)) %>% 
+  add_header_above(c(" ", "Sources améliorées" = 12, "Sources non améliorées" = 4, " " = 3)) %>% 
+  add_header_above(c(" ", "Source principale d'eau de boisson" = 19)) 
+
+
+```
+
+
+```{r, echo = T, eval = F}
 
 tab.1.1 %>% 
   kable(format = "latex", digits = 1, format.args = list(big.mark = ",", scientific = FALSE)) %>% 
@@ -251,7 +270,7 @@ tab.1.1 %>%
   pack_rows(label(hh$windex5), 16, 20) %>% 
   add_header_above(c(" " , "Eau courante" = 4, " " = 15)) %>% 
   add_header_above(c(" ", "Sources améliorées" = 12, "Sources non améliorées" = 4, " " = 3)) %>% 
-  add_header_above(c(" ", "Source principale d'eau de boisson" = 19))
+  add_header_above(c(" ", "Source principale d'eau de boisson" = 19)) 
 
 
 a = data.frame(tab.1.1); 
@@ -579,11 +598,26 @@ rownames(tab.1.2)[1] = "Total"
 
 ### parenth function
 
-```{r}
+```{r, eval = F}
 
-paren_fun <- function(df) {
-  df <- df %>% mutate(less_25 = ifelse(Count <= 25, 1, ))
+# inputs - df is the dataframe in which we want to suppress values / apply rule
+# N is the vector of unweighted samples
+
+samp_check_fun <- function(df, N, inds) {
+  ind = ifelse(N < 25, 1, 
+               ifelse(N %in% 25:49, 2,
+                      3))
+  
+  
+  
+  df[ind == 1, inds] = "*"
+  df[ind == 2, inds] = 
+  
+  
 }
+
+
+
 
 
 ```
