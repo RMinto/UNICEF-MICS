@@ -2,7 +2,7 @@
 title: "Ch10 - WS 1.1 - 1.3"
 author: "Reid Minto"
 date: "April 22, 2020"
-output: word_document
+output: github_document
 always_allow_html: true
 ---
 
@@ -27,8 +27,8 @@ library(Hmisc); library(survey)
 library(expss); library(here); library(gmodels)
 library(flextable); library(formattable)
 library(prettydoc); library(officer)
-library(ReporteRs)
-library(tableone); library(sjPlot); library(srvyr)
+
+library(tableone); library(sjPlot); 
 
 ```
  
@@ -93,61 +93,8 @@ val_lab(hh$WS1) = make_labels("
     99 NON REPONSE
                                  ")
 ############   Begin 10 - WS.sps   ############################
-
-hh <- hh %>% 
-  mutate(drinkingWater = ifelse(WS1 %in% c(11:14, 21, 31, 41, 51, 61, 71, 72, 91, 92), 1, 2))
-
-var_lab(hh$drinkingWater) = "Main source of drinking water"
-val_lab(hh$drinkingWater) = make_labels("
-  1 Improved sources
-  2 Unimproved sources
-")
-
-
-
-hh <- hh %>% 
-  mutate(toiletType = case_when(
-    WS11 %in% c(11:13, 18, 21, 22, 31) ~ 1,
-    WS11 == 95 ~ 3,
-    TRUE ~ 2
-  ))
-
-
-var_lab(hh$toiletType) = "Type of sanitation facility"
-val_lab(hh$toiletType) = make_labels("
-    1 Improved
-    2 Unimproved
-    3 Open defecation (no facility, bush, field)
-                                     ")
-
-
-hh <- hh %>% mutate(flush = NA) %>% mutate(flush = case_when(
-  WS11 %in% c(1:14, 18) ~ 1
-))
-
-var_lab(hh$flush) = ""; val_lab(hh$flush) = make_labels(" 
-                                                        1 Flush/Pour flush to:
-                                                        ")
-
-
-
-hh <- hh %>% mutate(sharedToilet = case_when(
-  WS17 %in% c(1:5) ~ 1,
-  WS17 %in% 97:99 ~ 9,
-  NA ~ 0,
-  TRUE ~ 2
-))
-
-hh <- hh %>% mutate(sharedToilet = ifelse(WS16 == 2, 3, sharedToilet))
-
-var_lab(hh$sharedToilet) = " "
-val_lab(hh$sharedToilet) = make_labels("
-  0 Not shared
-  1 5 households or less
-  2 More than 5 households
-  3 Public facility
-  9 DK/Missing
-                                       ")
+source(here("R/drinkingWater.R"))
+                       
 
 
 ############   End 10 - WS.sps   ############################
@@ -236,7 +183,7 @@ colnames(tab.1.1)[1:17] = colnames(tab.1.1)[ind]
 
 
 
-# SFR Table Ch10 WS 1.1
+# SFR 10.1.1
 
 
 ```{r}
@@ -252,7 +199,8 @@ tab.1.1 %>%
   pack_rows(label(hh$windex5), 16, 20) %>% 
   add_header_above(c(" " , "Eau courante" = 4, " " = 15)) %>% 
   add_header_above(c(" ", "Sources améliorées" = 12, "Sources non améliorées" = 4, " " = 3)) %>% 
-  add_header_above(c(" ", "Source principale d'eau de boisson" = 19)) 
+  add_header_above(c(" ", "Source principale d'eau de boisson" = 19)) %>% 
+  add_header_above(c("Table WS.1.1: Use of improved and unimproved water sources" = 20))
 
 
 ```
@@ -399,62 +347,7 @@ var_lab(hh$time) = "Time to source of drinking water"; val_lab(hh$time) = make_l
 
 #####################      BEGIN 10 - WS.SPS    ################################
 
-
-hh <- hh %>% 
-  mutate(drinkingWater = ifelse(WS1 %in% c(11:14, 21, 31, 41, 51, 61, 71, 72, 91, 92), 1, 2))
-
-var_lab(hh$drinkingWater) = "Main source of drinking water"
-val_lab(hh$drinkingWater) = make_labels("
-  1 Improved sources
-  2 Unimproved sources
-")
-
-
-
-hh <- hh %>% 
-  mutate(toiletType = case_when(
-    WS11 %in% c(11:13, 18, 21, 22, 31) ~ 1,
-    WS11 == 95 ~ 3,
-    TRUE ~ 2
-  ))
-
-
-var_lab(hh$toiletType) = "Type of sanitation facility"
-val_lab(hh$toiletType) = make_labels("
-    1 Improved
-    2 Unimproved
-    3 Open defecation (no facility, bush, field)
-                                     ")
-
-
-hh <- hh %>% mutate(flush = NA) %>% mutate(flush = case_when(
-  WS11 %in% c(1:14, 18) ~ 1
-))
-
-var_lab(hh$flush) = ""; val_lab(hh$flush) = make_labels(" 
-                                                        1 Flush/Pour flush to:
-                                                        ")
-
-
-
-hh <- hh %>% mutate(sharedToilet = case_when(
-  WS17 %in% c(1:5) ~ 1,
-  WS17 %in% 97:99 ~ 9,
-  NA ~ 0,
-  TRUE ~ 2
-))
-
-hh <- hh %>% mutate(sharedToilet = ifelse(WS16 == 2, 3, sharedToilet))
-
-var_lab(hh$sharedToilet) = " "
-val_lab(hh$sharedToilet) = make_labels("
-  0 Not shared
-  1 5 households or less
-  2 More than 5 households
-  3 Public facility
-  9 DK/Missing
-                                       ")
-
+source(here("R/drinkingWater.R"))
 
 #####################     END 10 - WS.SPS      ################################
 
@@ -516,15 +409,15 @@ the same table but for `drinkingWater == 2`
 
 ```{r}
 
-df.unweighted <- hh %>% summarize(Count = sum(HH48)) %>% 
+df.unweighted <- hh %>% dplyr::summarize(Count = sum(HH48)) %>% 
   rbind.data.frame(hh %>% group_by(as_factor(HH6)) %>% 
-                     summarize(Count = sum(HH48)) %>% select(Count)) %>% 
+                     dplyr::summarize(Count = sum(HH48)) %>% select(Count)) %>% 
   rbind.data.frame(hh %>% group_by(as_factor(HH7)) %>% 
-                     summarize(Count = sum(HH48)) %>% select(Count)) %>% 
+                     dplyr::summarize(Count = sum(HH48)) %>% select(Count)) %>% 
   rbind.data.frame(hh %>% group_by(as_factor(helevel)) %>% 
-                     summarize(Count = sum(HH48)) %>% select(Count)) %>% 
+                     dplyr::summarize(Count = sum(HH48)) %>% select(Count)) %>% 
   rbind.data.frame(hh %>% group_by(as_factor(windex5)) %>% 
-                     summarize(Count = sum(HH48)) %>% select(Count)); 
+                     dplyr::summarize(Count = sum(HH48)) %>% select(Count)); 
 
 df.unweighted$Count = round(df.unweighted$Count); 
 rownames(df.unweighted) = c("Total", levels(as_factor(hh$HH6)), levels(as_factor(hh$HH7)), levels(as_factor(hh$helevel)), 
@@ -534,15 +427,15 @@ rownames(df.unweighted) = c("Total", levels(as_factor(hh$HH6)), levels(as_factor
 
 
 # to be turned into function - this is likely common task in every chapter...
-N <- hh %>% summarize(Count = sum(nhhmem)) %>% 
+N <- hh %>% dplyr::summarize(Count = sum(nhhmem)) %>% 
   rbind.data.frame(hh %>% group_by(as_factor(HH6)) %>% 
-                     summarize(Count = sum(nhhmem)) %>% select(Count)) %>% 
+                     dplyr::summarize(Count = sum(nhhmem)) %>% select(Count)) %>% 
   rbind.data.frame(hh %>% group_by(as_factor(HH7)) %>% 
-                     summarize(Count = sum(nhhmem)) %>% select(Count)) %>% 
+                     dplyr::summarize(Count = sum(nhhmem)) %>% select(Count)) %>% 
   rbind.data.frame(hh %>% group_by(as_factor(helevel)) %>% 
-                     summarize(Count = sum(nhhmem)) %>% select(Count)) %>% 
+                     dplyr::summarize(Count = sum(nhhmem)) %>% select(Count)) %>% 
   rbind.data.frame(hh %>% group_by(as_factor(windex5)) %>% 
-                     summarize(Count = sum(nhhmem)) %>% select(Count)); 
+                     dplyr::summarize(Count = sum(nhhmem)) %>% select(Count))
 
 N$Count = round(N$Count)
 N <- N %>% mutate(Total = Count)
@@ -604,27 +497,31 @@ rownames(tab.1.2)[1] = "Total"
 # N is the vector of unweighted samples
 
 samp_check_fun <- function(df, N, inds) {
-  ind = ifelse(N < 25, 1, 
-               ifelse(N %in% 25:49, 2,
+  ind = ifelse(N[,1] < 25, 1, 
+               ifelse(N[,1] %in% 25:49, 2,
                       3))
   
   
   
   df[ind == 1, inds] = "*"
-  df[ind == 2, inds] = 
+  df[ind == 2, inds] = paste0("(", format(unlist(df[ind == 2, inds])), ")")
+  
+  
   
   
 }
 
 
-
+ind = ifelse(df.unweighted$Count < 25, 1, 
+               ifelse(df.unweighted$Count %in% 25:49, 2,
+                      3))
 
 
 ```
 
 
 
-# SFR Table Ch10 WS 1.2
+# SFR 10.1.2
 
 
 
@@ -642,7 +539,8 @@ tab.1.2 %>%
   add_header_above(c(" ", "Users of improved drinking water sources" = 4, 
                      "Users of unimproved drinking water sources" = 4,
                      " " = 3)) %>% 
-  add_header_above(c(" ", "Time to source of drinking water" = 8, " " = 3))
+  add_header_above(c(" ", "Time to source of drinking water" = 8, " " = 3)) %>% 
+  add_header_above(c("Tableau WS.1.2: Utilisation des services d'eau de boisson de base et limités" = 12))
   
 
 
@@ -652,7 +550,7 @@ tab.1.2 %>%
 
 
 
-```{r}
+```{r, eval = F}
 
 
 a = data.frame(tab.1.2); 
@@ -793,5 +691,151 @@ ft <- set_footer_df(ft, mapping = typology, key = "col_keys" )
 ft <- italic(ft, italic = TRUE, part = "footer" )
 ft <- theme_booktabs(ft)
 ft
+```
+
+
+
+# 10 - WS.1.3
+
+```{r}
+
+hl <- read_sav(here("Data/Tunisia_hl.sav"))
+hh <- read_sav(here("Data/Tunisia_hh.sav")) %>% arrange(HH1, HH2)
+
+```
+
+```{r}
+
+hl <- hl %>% mutate(personcwater = 9) %>% 
+  mutate(personcwater = ifelse(HL4 == 2 & HL6 >= 15 & HL6 <= 95, 1,
+                               ifelse(HL4 == 1 & HL6 >= 15 & HL6 <= 95, 2,
+                                      ifelse(HL4 == 2 & HL6 <= 14, 3,
+                                             ifelse(HL4 == 1 & HL6 <= 14, 4,
+                                                    personcwater)))))
+
+var_lab(hl$personcwater) = "Person usually collecting drinking water"
+val_lab(hl$personcwater) = make_labels("
+1 Woman (15+)
+2 Man (15+)
+3 Female child under age 15
+4 Male child under age 15
+9 DK/Missing/Members do not collect
+                                       ")
+hl <- hl %>% select(HH1, HH2, HL1, personcwater) %>% rename(WS5 = HL1)
+
+hh = hh %>% left_join(hl, by = c("HH1", "HH2", "WS5"))
+
+hh <- hh %>% mutate(personcwater = ifelse(WS4 == 0, 9,
+                                          ifelse(WS5 == 0 | WS5 > 90, 9,
+                                                 personcwater)))
+
+var_lab(hh$personcwater) = "Person usually collecting drinking water"
+val_lab(hh$personcwater) = make_labels("
+1 Woman (15+)
+2 Man (15+)
+3 Female child under age 15
+4 Male child under age 15
+9 DK/Missing/Members do not collect
+                                       ")
+
+hh <- hh %>% filter(HH46 == 1) %>% mutate(hhweightHH48 = HH48 * hhweight) %>%
+  mutate(nhhmem = 1 * hhweightHH48)
+var_lab(hh$nhhmem) = "Number of household members"; val_lab(hh$nhhmem) = make_labels("1 ")
+
+
+hh <- hh %>% mutate(withoutWater = 0) %>% mutate(withoutWater = ifelse(!is.na(WS4), 100, withoutWater))
+
+var_lab(hh$withoutWater) = "Percentage of household members without drinking water on premises"
+
+
+hh <- hh %>% mutate(nhhmemwithoutWater = ifelse(!is.na(WS4), 1, 0))
+
+source(here("R/drinkingWater.R"))
+
+
+
+
+```
+
+
+
+
+```{r}
+
+source(here("R/denoms.R"))
+
+
+tab.collecting = xtabs(nhhmem ~ personcwater, hh) %>% 
+  rbind(xtabs(nhhmem ~ as_factor(HH6) + personcwater, hh)) %>% 
+  rbind(xtabs(nhhmem ~ as_factor(HH7) + personcwater, hh)) %>%
+  rbind(xtabs(nhhmem ~ as_factor(helevel) + personcwater, hh)) %>% 
+  rbind(xtabs(nhhmem ~ as_factor(windex5) + personcwater, hh)) 
+
+
+
+tab.without <- xtabs(nhhmem ~ withoutWater, hh) %>% 
+  rbind(xtabs(nhhmem ~ as_factor(HH6) + withoutWater, hh)) %>% 
+  rbind(xtabs(nhhmem ~ as_factor(HH7) + withoutWater, hh)) %>%
+  rbind(xtabs(nhhmem ~ as_factor(helevel) + withoutWater, hh)) %>% 
+  rbind(xtabs(nhhmem ~ as_factor(windex5) + withoutWater, hh)); tab.without = round(tab.without[,2])
+
+
+tab <- cbind(tab.without, N$Count, tab.collecting, tab.without, tab.without)
+rownames(tab)[1] = "Total"; 
+
+tab[, 1] = (100 * tab[,1]) / tab[, 2]
+
+tab[,3:8] = (100 * tab[,3:8]) / tab[, 9]
+
+
+
+
+
+labs = c(label(hh$withoutWater), label(hh$nhhmem), levels(as_factor(hh$personcwater)), "Total",
+         "Number of household members without drinking water on site")
+tab.1.3 = tab
+
+colnames(tab.1.3) = labs
+
+
+
+
+denom = tab.1.3[, 9]
+ind = ifelse(denom < 25, 1, 
+               ifelse(denom %in% 25:49, 2,
+                      3))
+
+tab.1.3[ , c(1,3:7)] = apply(tab[, c(1, 3:7)], 2, function(x) round(x, digits = 1))
+tab.1.3[, c(2, 8, 9)] = apply(tab[, c(2, 8, 9)], 2, function(x) formatC(x, format = "d", big.mark = ","))
+
+tab.1.3[ind == 1, 3:7] = "(*)"
+
+
+```
+
+# SFR Table 10.1.3
+
+```{r}
+
+
+
+labp = label(hh$personcwater)
+
+
+
+
+tab.1.3 %>% 
+  kable(digits = 1, format.args = list(big.mark = ",", scientific = FALSE)) %>% 
+  kable_styling(c("striped"), font_size = 10) %>% 
+  pack_rows(label(hh$HH6), 2, 3) %>% 
+  pack_rows(label(hh$HH7), 4, 10) %>% 
+  pack_rows(label(hh$helevel), 11, 15) %>% 
+  pack_rows(label(hh$windex5), 16, 20) %>% 
+  kableExtra::add_header_above(c(" " = 3, "Person usually collecting drinking water" = 5, " " = 2)) %>% 
+  add_header_above(c("
+Table WS.1.3: Person collecting water" = 10))
+
+
+
 ```
 
