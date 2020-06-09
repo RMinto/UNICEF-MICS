@@ -1,0 +1,132 @@
+---
+title: "Untitled"
+output: html_document
+---
+
+
+# Load libraries
+
+
+
+```{r, warning = F, message = F}
+
+library(tidyverse); library(haven); library(lubridate);
+library(knitr); library(kableExtra);
+library(Hmisc); library(survey)
+library(expss); library(here); library(gmodels)
+library(flextable); library(formattable)
+library(prettydoc); library(officer)
+
+library(tableone); library(sjPlot); 
+
+```
+
+
+# WS 1.4
+
+
+```{r}
+
+
+
+hl <- read_sav(here("Data/Tunisia_hl.sav")) %>% arrange(HH1, HH2, HL1)
+
+hh <- read_sav(here("Data/Tunisia_hh.sav")) %>% arrange(HH1, HH2)
+
+```
+
+
+```{r}
+
+
+hl <- hl %>% mutate(elevel = ifelse(ED5A %in% c(3:4), 3,
+                                  ifelse(ED5A %in% c(8:9), 9,
+                                         0)))
+
+var_lab(hl$elevel) = "Education"
+val_lab(hl$elevel) = make_labels("
+  0 None/ECE
+  1 Primary
+  2 Lower secondary
+  3 Upper secondary or higher  
+  9 DK/Missing                                
+                       
+                                 ")
+  
+  
+
+tmp.person.cwater = hl %>% select(HH1, HH2, HL1, HL4, HL6, elevel) %>% rename(WS5 = HL1)
+
+
+
+```
+
+
+
+Merge the person collecting the water with the household file. 
+
+```{r}
+
+
+df = hh %>% left_join(tmp.person.cwater, by = c("HH1", "HH2", "WS5")) %>% 
+  filter(HH46 == 1, WS4 > 0) %>% 
+  mutate(hhweightHH48 = HH48 * hhweight) %>%
+  mutate(nhhmem = hhweightHH48)
+
+
+var_lab(df$nhhmem) = "Number of household members without drinking water on premises and where household members are primarily responsible for collecting water"
+
+
+df <- df %>% 
+  mutate(Time = NA) %>% 
+  mutate(Time = ifelse(WS4 < 995 & WS6 < 95, floor(WS4 * WS6 / 7), Time)) %>% 
+  mutate(Time = ifelse(Time %in% 0:30, 1,
+                       ifelse(Time %in% 31:60, 2,
+                              ifelse(Time %in% 61:180, 3,
+                                     ifelse(Time %in% c(181, max(df$Time)), 4, Time)))))
+
+df <- df %>% mutate(averagetime = Time) %>% 
+  mutate(averagetime = ifelse(WS4 > 995 | WS6 > 95, 9, averagetime))
+
+
+df <- df %>% mutate(age1 = ifelse(HL6 %in% 0:14, 1,
+                                  ifelse(HL6 %in% 15:49, 3,
+                                         ifelse(HL6 %in% 50:95, 4, 9))))
+
+var_lab(df$age1) = "Age"
+
+df = df %>% mutate(age2 = ifelse(HL6 %in% 15:17, 2, age1))
+
+val_lab(df$age1) = make_labels("
+1 <15
+2 5-14
+3 15-49
+4 50+
+9 DK/Missing
+             ")
+
+
+
+```
+
+
+```{r}
+
+source(here("R/drinkingWater.R"))
+
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
