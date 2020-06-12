@@ -115,7 +115,45 @@ val_lab(df$age1) = make_labels("
 source(here("R/drinkingWater.R"))
 
 
- a
+ 
+
+```
+
+
+# WS 1.5
+
+```{r}
+
+
+
+hl <- read_sav(here("Data/Tunisia_hl.sav")) %>% arrange(HH1, HH2, HL1)
+
+hh <- read_sav(here("Data/Tunisia_hh.sav")) %>% filter(HH46 == 1) %>%
+  mutate(nhhmem = HH48 * hhweight)
+
+
+var_lab(hh$nhhmem) = "Number of household members"
+
+source(here("R/drinkingWater.R"))
+
+
+hh <- hh %>% mutate(sufficentwater = 0) %>% 
+  mutate(sufficentwater = ifelse(WS7 == 2, 100, sufficentwater))
+
+var_lab(hh$sufficentwater) = "Percentage of household population with drinking water available in sufficient quantities [1]"
+
+
+hh <- hh %>% mutate(nmemnotsufficent = ifelse(!is.na(WS8), 1, 0))
+
+
+var_lab(hh$nmemnotsufficent) = "Number of household members unable to access water in sufficient quantities when needed"
+
+hh <- hh %>% mutate(WS8 = ifelse(WS8 == 8, 9, WS8)); 
+val_lab(hh$WS8) = make_labels("
+                              9 DK/Missing
+                              ")
+
+var_lab(hh$WS8) = "Main reason that the household members are unable to access water in sufficient quantities"
 
 ```
 
@@ -123,8 +161,14 @@ source(here("R/drinkingWater.R"))
 
 
 
+# WS 1.6
 
 
+```{r}
+
+
+
+```
 
 
 
