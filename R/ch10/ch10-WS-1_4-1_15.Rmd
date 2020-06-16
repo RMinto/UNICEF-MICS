@@ -468,6 +468,58 @@ val_lab(hh$watersource) = make_labels("
 ```{r}
 
 
+hh <- hh %>% filter(HH46 == 1) %>% 
+  mutate(hhweightHH48 = HH48 * hhweight) %>% mutate(nhhmem = 1 * hhweightHH48)
+
+var_lab(hh$nhhmem) = "Number of household members"; 
+val_lab(hh$nhhmem) = make_labels("
+1                        ")
+
+
+
+hh <- hh %>% mutate(treat = 1)
+val_lab(hh$treat) = make_labels("
+                                1 Water treatment method used in the household
+                                ")
+
+
+hh <- hh %>% mutate(none = 0) %>% 
+  mutate(none = ifelse(!WS9 == 1, 100, none))
+
+
+
+
+hh <- hh %>% mutate(boil = ifelse(WS10A == "A", 100, 0)); var_lab(hh$boil) = "Boil"
+
+hh <- hh %>% mutate(bleach = ifelse(WS10B == "B", 100, 0),
+                    cloth = ifelse(WS10C == "C", 100, 0),
+                    waterFilter = ifelse(WS10D == "D", 100, 0),
+                    solar = ifelse(WS10E == "E", 100, 0),
+                    stand = ifelse(WS10F == "F", 100, 0),
+                    other = ifelse(WS10X == "X", 100, 0),
+                    dkmissing = ifelse(WS10Z == "Z" | WS10NR == "?", 100, 0))
+
+
+
+source(here("R/drinkingWater.R"))
+
+
+
+hh <- hh %>% mutate(appropriate = 0) %>% 
+  mutate(appropriate = ifelse(boil == 100 | bleach == 100 | waterFilter == 100 | solar == 100, 100, appropriate))
+
+
+var_lab(hh$appropriate) = "Percentage of household members in households using an appropriate water treatment method"
+
+
+
+
+var.labs = list(boil = "Boil", bleach = "Add bleach / chlorine", cloth = "Strain through a cloth",
+                waterFilter = "Use water filter", solar = "Solar disinfection", stand = "Let it stand and settle", other = "Other", dkmissing = "Dk/Missing")
+
+
+
+
 
 ```
 
