@@ -350,3 +350,136 @@ val_lab(hh$watersource) = make_labels("
 
 
 
+
+
+# WS 1.8
+
+```{r}
+
+
+
+
+hh <- read_sav(here("Data/Tunisia_hh.sav")) %>% arrange(HH1, HH2) %>% 
+  filter(WQ31 == 1) %>% 
+  mutate(wqsweightHH48 = 0) %>% 
+  mutate(wqsweightHH48 = ifelse(wqsweight > 0, wqsweight * HH48, wqsweightHH48)) %>% 
+  mutate(nhhmem = wqsweightHH48)
+
+var_lab(hh$nhhmem) = "Number of household members"
+source(here("R/drinkingWater.R"))
+
+
+hh <- hh %>% mutate(EC_100_S = NA) %>% 
+  mutate(EC_100_S = ifelse(WQ27 < 997 & WQ27 >= 100, 101,
+                           ifelse(WQ27 < 101 | WQ27 >= 997, WQ27, EC_100_S)))
+
+hh <- hh %>% mutate(Risk_S = ifelse(EC_100_S %in% 1:10, 1,
+                                      ifelse(EC_100_S %in% 11:100, 2,
+                                             ifelse(EC_100_S == 101, 3,
+                                                    ifelse(EC_100_S >= 102, 9, EC_100_S)))))
+
+
+var_lab(hh$Risk_S) = "Risk level based on number of E. coli per 100 mL"
+val_lab(hh$Risk_S) = make_labels("
+                                 0 Low (<1 per 100 mL)
+                                 1 Moderate (1-10 per 100 mL)
+                                 2 High (11-100 per 100 mL)
+                                 3 Very high (>100 per 100 mL)
+                                 9 DK/Missing
+                                 ")
+
+
+
+
+hh = hh %>% mutate(WithoutEC_S = 0) %>% 
+  mutate(WithoutEC_S = ifelse(Risk_S == 0, 100, WithoutEC_S))
+
+
+var_lab(hh$WithoutEC_S) = "Without E. coli in drinking water source"
+
+
+hh <- hh %>% mutate(sufficentwater = 0) %>% 
+  mutate(sufficentwater = ifelse(WS7 == 2, 100, sufficentwater))
+
+var_lab(hh$sufficentwater) = "Percentage of household population with drinking water available in sufficient quantities [1]"
+
+
+
+hh = hh %>% mutate(wpremises = 0) %>% 
+  mutate(wpremises = ifelse(WS1 %in% 11:13 | WS2 %in% 11:13 | WS3 %in% 1:2, 100, wpremises))
+
+var_lab(hh$wpremises) = "Drinking water accessible on premises"
+
+
+
+hh = hh %>% mutate(indSDG611 = 0) %>% 
+  mutate(indSDG611 = ifelse(drinkingWater == 1 & WithoutEC_S == 100 & sufficentwater == 100 & wpremises == 100, 100, indSDG611))
+
+
+
+hh = hh %>% filter(Risk_S <= 3)
+
+
+
+hh <- hh %>%
+  mutate(impdrinkingWaterSource = ifelse(WS1 %in% 11:14, 11,
+                                                    ifelse(WS1 == 21, 12,
+                                                           ifelse(WS1 %in% c(31, 41), 13,
+                                                                  ifelse(WS1 == 51, 14,
+                                                                         ifelse(WS1 == 72, 15,
+                                                                                ifelse(WS1 %in% c(61, 71), 16,
+                                                                                       ifelse(WS1 %in% 91:92, 17, WS1)))))))) # else WS1?
+
+hh = hh %>% mutate(unimpdrinkingWaterSource = ifelse(WS1 %in% c(32, 42), 21, 22))
+
+
+
+
+hh <- hh %>% mutate(watersource = ifelse(impdrinkingWaterSource %in% 11:17, 10, 
+                                         ifelse(unimpdrinkingWaterSource %in% 21:22, 20, NA)))
+
+
+val_lab(hh$watersource) = make_labels("
+  10 Improved sources
+  11 Piped water
+  12 Tubewell/Borehole
+  13 Protected well or spring
+  14 Rainwater collection
+  15 Water kiosk	  				 
+  16 Tanker-truck/Cart will small tank
+  17 Bottled/Sachet water
+  20 Unimproved sources
+  21 Unprotected well or spring
+  22 Surface water/Other
+                                      ")
+
+
+
+
+
+
+```
+
+
+
+
+# WS 1.9
+
+```{r}
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
