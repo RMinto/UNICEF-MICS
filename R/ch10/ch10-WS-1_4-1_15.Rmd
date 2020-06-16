@@ -83,7 +83,7 @@ df <- df %>%
   mutate(Time = ifelse(Time %in% 0:30, 1,
                        ifelse(Time %in% 31:60, 2,
                               ifelse(Time %in% 61:180, 3,
-                                     ifelse(Time %in% c(181, max(df$Time)), 4, Time)))))
+                                     ifelse(Time >= 181, 4, Time)))))
 
 df <- df %>% mutate(averagetime = Time) %>% 
   mutate(averagetime = ifelse(WS4 > 995 | WS6 > 95, 9, averagetime))
@@ -300,8 +300,6 @@ var_lab(hh$EC_H) = "Percentage of household population with  E. coli in househol
 
 hh = hh %>% filter(Risk_H <= 3)
 
-
-hh <- hh %>% mutate(impdrinkingWaterSource = ifelse())
 
 
 
