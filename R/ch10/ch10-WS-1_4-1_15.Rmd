@@ -579,6 +579,78 @@ val_lab(hh$numHouseholdsObs) = make_labels("
 
 
 
+# WS 3.1
+
+```{r}
+
+
+
+hh <- hh %>% filter(HH46 == 1) %>% 
+  mutate(hhweightHH48 = HH48 * hhweight) %>% mutate(nhhmem = 1 * hhweightHH48)
+
+var_lab(hh$nhhmem) = "Number of household members"; 
+val_lab(hh$nhhmem) = make_labels("
+1                        ")
+
+
+
+source(here("R/drinkingWater.R"))
+
+
+hh <- hh %>% mutate(WS11 = ifelse(WS11 %in% 97:99, 99, WS11))
+val_lab(hh$WS11) = make_labels("
+  95  
+	99 DK/Missing
+                               ")
+
+
+
+
+hh <- hh %>% mutate(improvepercent = ifelse(toiletType == 1, 100, 0)); var_lab(hh$improvepercent) = "Percentage using improved sanitation [1]"
+
+hh = hh %>% mutate(WS14 = ifelse(WS11 == 95, 4, WS14)); var_lab(hh$WS14) = "Location of sanitation facility"
+val_lab(hh$WS14) = make_labels("
+                               4 Open defecation (no facility, bush, field)
+                               ")
+
+
+
+var_lab(hh$toiletType) = "Type of sanitation facility used by household"
+val_lab(hh$toiletType) = make_labels("
+                                     1 Improved sanitation facility
+                                     2 Unimproved sanitation facility
+                                     3 Open defecation (no facility, bush, field)
+                                     ")
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
