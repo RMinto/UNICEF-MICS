@@ -524,6 +524,58 @@ var.labs = list(boil = "Boil", bleach = "Add bleach / chlorine", cloth = "Strain
 
 
 
+# WS 2.1
+
+```{r}
+
+
+hh <- hh %>% filter(HH46 == 1) %>% 
+  mutate(hhweightHH48 = HH48 * hhweight) %>% mutate(nhhmem = 1 * hhweightHH48)
+
+var_lab(hh$nhhmem) = "Number of household members"; 
+val_lab(hh$nhhmem) = make_labels("
+1                        ")
+
+
+hh <- hh %>% mutate(layer1 = 0,
+                    layer2 = 0,
+                    fixedobserved = ifelse(HW1 == 1 | HW1 == 2, 100, 0),
+                    mobileobserved = ifelse(HW1 == 3, 100, 0),
+                    noplace = ifelse(HW1 == 4, 100, 0),
+                    nopermission = ifelse(HW1 >= 5, 100, 0))
+
+
+val_lab(hh$layer1) = make_labels("
+                                 0 Handwashing facility observed
+                                 ")
+
+val_lab(hh$layer2) = make_labels("
+                                 0 Handwashing facility observed and
+                                 ")
+
+
+
+hh <- hh %>% mutate(numHouseholdsObs = ifelse(fixedobserved == 100 | mobileobserved == 100, 1, 0)) %>% 
+  mutate(water = ifelse(HW2 == 1, 100, 0),
+         Soap = ifelse(HW7A == "A" | HW7B == "B", 100, 0),
+         Ash = ifelse(HW7C == "C", 100, 0),
+         numHHObsnoplace = ifelse(fixedobserved == 100 | noplace == 100, 1, 0)) %>% 
+  mutate(indWS7 = ifelse(HW2 == 1 & (HW7A == "A" | HW7B == "B"), 100, 0))
+
+
+
+var_lab(hh$water) = "water available"; var_lab(hh$Soap) = "soap available"
+var_lab(hh$Ash) = "with ash/mud/sand available"
+
+var_lab(hh$indWS7) = "Percentage of household members with handwashing facility where water and soap are present[1]"
+
+val_lab(hh$numHouseholdsObs) = make_labels("
+                                           1 Number of household members where handwashing facility was observed
+                                           ")
+
+
+
+```
 
 
 
