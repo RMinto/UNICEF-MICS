@@ -256,7 +256,31 @@ val_lab(hh$watersource) = make_labels("
 
 ```{r}
 
-hh <- read_sav(here("Data/Tunisia_hh.sav")) %>% arrange(HH1, HH2) %>% 
+hh <- read_sav(here("Data/Tunisia_hh.sav")) 
+
+hh = hh %>% mutate(HHAGEx = ifelse(HHAGE %in% 15:19, 1,
+                                   ifelse(HHAGE %in% 20:24, 2,
+                                          ifelse(HHAGE %in% 25:49, 3,
+                                                 ifelse(HHAGE >= 50, 4, HHAGE)))))
+
+var_lab(hh$HHAGEx) = "Age of household head"
+
+hh = hh %>% mutate(HHAGEy = ifelse(HHAGE %in% 15:19, 1,
+                                   ifelse(HHAGE %in% 20:24, 2,
+                                          ifelse(HHAGE %in% 25:29, 3,
+                                                 ifelse(HHAGE %in% 30:34, 4,
+                                                        ifelse(HHAGE %in% 35:39, 5, 
+                                                               ifelse(HHAGE %in% 40:44, 6,
+                                                                      ifelse(HHAGE %in% 45:49, 7,
+                                                                             ifelse(HHAGE %in% 50:59, 8,
+                                                                                    ifelse(HHAGE %in% 60:69, 9,
+                                                                                           ifelse(HHAGE >= 70, 10, HHAGE)))))))))))
+
+
+var_lab(hh$HHAGEy) = "Age of household head"
+
+
+hh = hh %>% arrange(HH1, HH2) %>% 
   filter(WQ31 == 1) %>% 
   mutate(wqhweightHH48 = 0) %>% 
   mutate(wqhweightHH48 = ifelse(wqhweight > 0, wqhweight * HH48, wqhweightHH48)) %>% 
@@ -624,18 +648,77 @@ val_lab(hh$toiletType) = make_labels("
 
 
 
+
+
+
+```
+
+
+#WS 3.2
+
+```{r}
+
+
+hh <- hh %>% filter(HH46 == 1) %>% 
+  mutate(hhweightHH48 = HH48 * hhweight) %>% mutate(nhhmem = 1 * hhweightHH48)
+
+var_lab(hh$nhhmem) = "Number of household members"; 
+val_lab(hh$nhhmem) = make_labels("
+1                        ")
+
+
+
+source(here("R/drinkingWater.R"))
+
+
+
+hh = hh %>% mutate(shared1 = ifelse(toiletType == 1, sharedToilet, NA))
+
+var_lab(hh$shared1) = "Users of improved sanitation facilities"
+val_lab(hh$shared1) = make_labels("
+  0 Not shared [1]
+  1 Shared by: 5 households or less
+  2 Shared by: More than 5 households
+  3 Public facility
+  9 DK/Missing
+                                  ")
+
+
+hh = hh %>% mutate(shared2 = ifelse(toiletType == 2, sharedToilet, NA))
+var_lab(hh$shared2) = "Users of unimproved sanitation facilities"
+val_lab(hh$shared2) = make_labels("
+  0 Not shared
+  1 Shared by: 5 households or less
+  2 Shared by: More than 5 households
+  3 Public facility
+  9 DK/Missing
+                                  ")
+
+
+
+
+hh = hh %>% mutate(shared3 = ifelse(toiletType == 3, 1, NA))
+
+hh = hh %>% mutate(WS14 = ifelse(WS11 == 95, 4, WS14))
+var_lab(hh$WS14) = "Location of sanitation facility"
+
+
+
+
+
+
 ```
 
 
 
 
+#WS 3.3
+
+```{r}
 
 
 
-
-
-
-
+```
 
 
 
