@@ -489,6 +489,7 @@ val_lab(hh$watersource) = make_labels("
 
 ```{r}
 
+hh <- read_sav(here("Data/Tunisia_hh.sav"))
 
 hh <- hh %>% filter(HH46 == 1) %>% 
   mutate(hhweightHH48 = HH48 * hhweight) %>% mutate(nhhmem = 1 * hhweightHH48)
@@ -552,7 +553,7 @@ var.labs = list(boil = "Boil", bleach = "Add bleach / chlorine", cloth = "Strain
 
 ```{r}
 
-
+hh <- read_sav(here("Data/Tunisia_hh.sav"))
 hh <- hh %>% filter(HH46 == 1) %>% 
   mutate(hhweightHH48 = HH48 * hhweight) %>% mutate(nhhmem = 1 * hhweightHH48)
 
@@ -608,7 +609,7 @@ val_lab(hh$numHouseholdsObs) = make_labels("
 ```{r}
 
 
-
+hh <- read_sav(here("Data/Tunisia_hh.sav"))
 hh <- hh %>% filter(HH46 == 1) %>% 
   mutate(hhweightHH48 = HH48 * hhweight) %>% mutate(nhhmem = 1 * hhweightHH48)
 
@@ -657,7 +658,7 @@ val_lab(hh$toiletType) = make_labels("
 #WS 3.2
 
 ```{r}
-
+hh <- read_sav(here("Data/Tunisia_hh.sav"))
 
 hh <- hh %>% filter(HH46 == 1) %>% 
   mutate(hhweightHH48 = HH48 * hhweight) %>% mutate(nhhmem = 1 * hhweightHH48)
@@ -716,6 +717,134 @@ var_lab(hh$WS14) = "Location of sanitation facility"
 
 ```{r}
 
+hh <- read_sav(here("Data/Tunisia_hh.sav")) %>% 
+  mutate(onsite = ifelse(WS11 == 12, 1,
+                         ifelse(WS11 %in% c(13, 21, 22, 31), 2, 0)))
+
+var_lab(hh$onsite) = "Type of onsite sanitation facility"
+
+hh = hh %>% filter(HH46 == 1, !onsite == 0) %>% 
+  mutate(hhweightHH48 = HH48 * hhweight) %>% mutate(nhhmem = 1 * hhweightHH48)
+
+var_lab(hh$nhhmem) = "Number of household members"; 
+val_lab(hh$nhhmem) = make_labels("
+1                        ")
+
+
+source(here("R/drinkingWater.R"))
+
+# septic tank
+
+hh <- hh %>% mutate(septicemptiedproviderplant = ifelse(onsite == 1 & WS13 == 1, 100, 0),
+                    septicemptiedproviderDK = ifelse(onsite == 1 & WS13 == 3, 100, 0),
+                    septicemptiedpit = ifelse(onsite == 1 & (WS13 == 2 | WS13 == 4), 100, 0),
+                    septicemptiedHHpit = ifelse(onsite == 1 & WS13 == 5, 100, 0),
+                    septicemptiedother = ifelse(onsite == 1 & WS13 == 6, 100, 0),
+                    septicemptiedDK = ifelse(onsite == 1 & WS13 == 8, 100, 0),
+                    septicneveremptied = ifelse(onsite == 1 & WS12 == 4, 100, 0),
+                    septicDKemptied = ifelse(onsite == 1 & WS12 >= 8, 100, 0))
+
+# other improved on-site sanitation facilities
+hh <- hh %>% mutate(Oonsiteemptiedproviderplant = ifelse(onsite == 2 & WS13 == 1, 100, 0),
+                    OonsiteemptiedproviderDK = ifelse(onsite == 2 & WS13 == 3, 100, 0),
+                    Oonsiteemptiedpit = ifelse(onsite == 2 & (WS13 == 2 | WS13 == 4), 100, 0),
+                    OonsiteemptiedHHpit = ifelse(onsite == 2 & WS13 == 5, 100, 0),
+                    Oonsiteemptiedother = ifelse(onsite == 2 & WS13 == 6, 100, 0),
+                    OonsiteemptiedDK = ifelse(onsite == 1 & WS13 == 8, 100, 0),
+                    Oonsiteneveremptied = ifelse(onsite == 2 & WS12 == 4, 100, 0),
+                    OonsiteDKemptied = ifelse(onsite == 2 & WS12 >= 8, 100, 0))
+
+
+hh = hh %>% mutate(safedisposal = ifelse(septicemptiedpit == 100 | septicneveremptied == 100 | septicDKemptied == 100 | Oonsiteemptiedpit == 100 |
+                                           Oonsiteneveremptied == 100 | OonsiteDKemptied == 100, 100, 0),
+                   unsafedisposal = ifelse(septicemptiedHHpit == 100 | septicemptiedother == 100 | OonsiteemptiedHHpit == 100 |
+                                             Oonsiteemptiedother == 100, 100, 0),
+                   treatment = ifelse(septicemptiedproviderplant == 100 | septicemptiedproviderDK == 100 | septicemptiedDK == 100 | 
+                                        Oonsiteemptiedproviderplant == 100 | OonsiteemptiedproviderDK == 100 | OonsiteemptiedDK == 100, 100, 0))
+
+
+hh = hh %>% mutate(layer1 = 0, layer2 = 0)
+hh = hh %>% mutate(WS11c = ifelse(is.na(WS11), 12, WS11))
+
+
+
+
+
+
+
+
+```
+
+
+#WS 3.4
+
+```{r}
+
+
+hh <- read_sav(here("Data/Tunisia_hh.sav"))
+
+
+source(here("R/commonVarsHH.R"))
+
+hh = hh %>% filter(HH46 == 1) %>% 
+  mutate(onsite = ifelse(WS11 == 12, 1,
+                         ifelse(WS11 %in% c(13, 21, 22, 31), 2, 0)))
+
+
+source(here("R/drinkingWater.R"))
+
+
+
+hh = hh %>% filter(HH46 == 1) %>% 
+  mutate(hhweightHH48 = HH48 * hhweight) %>% mutate(nhhmem = 1 * hhweightHH48)
+
+var_lab(hh$nhhmem) = "Number of household members"; 
+val_lab(hh$nhhmem) = make_labels("
+1                        ")
+
+
+
+# septic tank
+
+hh <- hh %>% mutate(septicemptiedproviderplant = ifelse(onsite == 1 & WS13 == 1, 100, 0),
+                    septicemptiedproviderDK = ifelse(onsite == 1 & WS13 == 3, 100, 0),
+                    septicemptiedpit = ifelse(onsite == 1 & (WS13 == 2 | WS13 == 4), 100, 0),
+                    septicemptiedHHpit = ifelse(onsite == 1 & WS13 == 5, 100, 0),
+                    septicemptiedother = ifelse(onsite == 1 & WS13 == 6, 100, 0),
+                    septicemptiedDK = ifelse(onsite == 1 & WS13 == 8, 100, 0),
+                    septicneveremptied = ifelse(onsite == 1 & WS12 == 4, 100, 0),
+                    septicDKemptied = ifelse(onsite == 1 & WS12 >= 8, 100, 0))
+
+# other improved on-site sanitation facilities
+hh <- hh %>% mutate(Oonsiteemptiedproviderplant = ifelse(onsite == 2 & WS13 == 1, 100, 0),
+                    OonsiteemptiedproviderDK = ifelse(onsite == 2 & WS13 == 3, 100, 0),
+                    Oonsiteemptiedpit = ifelse(onsite == 2 & (WS13 == 2 | WS13 == 4), 100, 0),
+                    OonsiteemptiedHHpit = ifelse(onsite == 2 & WS13 == 5, 100, 0),
+                    Oonsiteemptiedother = ifelse(onsite == 2 & WS13 == 6, 100, 0),
+                    OonsiteemptiedDK = ifelse(onsite == 1 & WS13 == 8, 100, 0),
+                    Oonsiteneveremptied = ifelse(onsite == 2 & WS12 == 4, 100, 0),
+                    OonsiteDKemptied = ifelse(onsite == 2 & WS12 >= 8, 100, 0))
+
+
+
+hh = hh %>% mutate(safedisposal = ifelse(septicemptiedpit == 100 | septicneveremptied == 100 | septicDKemptied == 100 | Oonsiteemptiedpit == 100 |
+                                           Oonsiteneveremptied == 100 | OonsiteDKemptied == 100, 100, 0),
+                   unsafedisposal = ifelse(septicemptiedHHpit == 100 | septicemptiedother == 100 | OonsiteemptiedHHpit == 100 |
+                                             Oonsiteemptiedother == 100, 100, 0),
+                   treatment = ifelse(septicemptiedproviderplant == 100 | septicemptiedproviderDK == 100 | septicemptiedDK == 100 | 
+                                        Oonsiteemptiedproviderplant == 100 | OonsiteemptiedproviderDK == 100 | OonsiteemptiedDK == 100, 100, 0))
+
+
+
+##########
+
+
+hh = hh %>% mutate(connectedsewer = ifelse(WS11 == 11 | WS11 == 18, 100, 0),
+                   usingimproved = ifelse(WS11 %in% c(14, 23, 41, 51, 96), 100, 0),
+                   opendefecation = ifelse(WS11 == 95, 100, 0),
+                   missingx = ifelse(WS11 > 97, 100, 0))
+
+
 
 
 ```
@@ -724,18 +853,96 @@ var_lab(hh$WS14) = "Location of sanitation facility"
 
 
 
+# WS 3.5
+
+```{r}
+
+
+
+hh <- read_sav(here("Data/Tunisia_hh.sav"))
+
+source(here("R/drinkingWater.R"))
+
+ch <- read_sav(here("Data/ch.sav"))
+
+
+hh <- hh %>% left_join(ch, by = c("HH1", "HH2")) %>% filter(UF17 == 1, UB2 < 3)
+
+hh = hh %>% mutate(stools = ifelse(CA31 %in% 1:2, 100, 0),
+                   disposalplace = ifelse(CA31 == 98, 99, CA31))
+
+
+
+```
+
+
+
+
+# WS 3.6
+
+```{r}
+
+
+hh <- read_sav(here("Data/Tunisia_hh.sav"))
+hh <- hh %>% filter(HH46 == 1) %>% 
+  mutate(hhweightHH48 = HH48 * hhweight) %>% mutate(nhhmem = 1 * hhweightHH48)
+
+var_lab(hh$nhhmem) = "Number of household members"; 
+val_lab(hh$nhhmem) = make_labels("
+1                        ")
+
+
+
+source(here("R/drinkingWater.R"))
+
+
+
+
+hh = hh %>% mutate(drinkingLayer = 0)
+
+hh = hh %>% mutate(drinking = drinkingWater + 1) %>% 
+  mutate(drinking = ifelse(WS1 %in% 11:12, 1,
+                           ifelse(WS1 %in% c(61, 71) & WS4 <= 30, 1,
+                                  ifelse(WS1 %in% c(13:14, 21, 31, 41, 51) & (WS3 %in% 1:2 | WS4 <= 30), 1,
+                                         ifelse(WS1 %in% 91:92 & WS2 %in% 11:12, 1,
+                                                ifelse(WS1 %in% 91:92 & (WS2 %in% c(61, 71) & WS4 <= 30), 1,
+                                                       ifelse(WS1 %in% 91:92 & WS2 %in% c(13,14,21,31,41,51) & (WS3 %in% 1:2 | WS4 <= 30), 1,
+                                                              ifelse(WS1 == 81, 4, drinking))))))))
+
+var_lab(hh$drinking) = "Drinking Water"
 
 
 
 
 
+hh = hh %>% mutate(sanitation = toiletType + 1) %>% 
+  mutate(sanitation = ifelse(toiletType == 1 & sharedToilet == 0, 1, sanitation))
+
+var_lab(hh$sanitation) = "Sanitation"
+
+hh = hh %>% mutate(handwashing = 4) %>% 
+  mutate(handwashing = ifelse(HW1 <= 3, 2,
+                              ifelse(HW1 == 4, 3,
+                                     ifelse(HW1 <= 4 & (HW2 == 1 & (HW7A == "A" | HW7B == "B")), 1, handwashing))))
+
+
+
+hh = hh %>% mutate(basictotal = ifelse(drinking == 1 & sanitation == 1 & handwashing == 1, 100, 0))
+
+
+
+```
+
+
+
+# WS 4.1
+
+```{r}
 
 
 
 
-
-
-
+```
 
 
 
