@@ -107,10 +107,14 @@ val_lab(df$age1) = make_labels("
 
 
 
+
+
 ```
 
 
 ```{r}
+
+hh = df
 
 source(here("R/drinkingWater.R"))
 
@@ -118,6 +122,120 @@ source(here("R/drinkingWater.R"))
  
 
 ```
+
+
+```{r}
+
+
+N <- hh %>% dplyr::summarize(Count = sum(nhhmem)) %>% 
+  rbind.data.frame(hh %>% group_by(as_factor(HH6)) %>% 
+                     dplyr::summarize(Count = sum(nhhmem)) %>% select(Count)) %>% 
+  rbind.data.frame(hh %>% group_by(as_factor(HH7)) %>% 
+                     dplyr::summarize(Count = sum(nhhmem)) %>% select(Count)) %>% 
+  rbind.data.frame(hh %>% group_by(as_factor(helevel)) %>% 
+                     dplyr::summarize(Count = sum(nhhmem)) %>% select(Count)) %>% 
+  
+  
+  rbind.data.frame(hh %>% group_by(as_factor(age1)) %>% 
+                     dplyr::summarize(Count = sum(nhhmem)) %>% select(Count)) %>% 
+  
+  rbind.data.frame(hh %>% group_by(as_factor(drinkingWater)) %>% 
+                     dplyr::summarize(Count = sum(nhhmem)) %>% select(Count)) %>% 
+  
+  rbind.data.frame(hh %>% group_by(as_factor(HHSEX)) %>% 
+                     dplyr::summarize(Count = sum(nhhmem)) %>% select(Count)) %>% 
+  
+  
+  
+  rbind.data.frame(hh %>% group_by(as_factor(windex5)) %>% 
+                     dplyr::summarize(Count = sum(nhhmem)) %>% select(Count))
+
+N$Count = round(N$Count)
+N <- N %>% mutate(Total = Count)
+N <- data.frame(N); colnames(N)[1] = label(hh$nhhmem)
+rownames(N) = c("Total", levels(as_factor(hh$HH6)), levels(as_factor(hh$HH7)), levels(as_factor(hh$helevel)), levels(as_factor(hh$age1)),
+                levels(as_factor(hh$drinkingWater)), levels(as_factor(hh$HHSEX)),
+                levels(as_factor(hh$windex5)))
+
+xtabs(nn)
+xtabs(nhhmem ~ HH6, df)
+
+
+```
+
+
+## SFR 1.4
+
+```{r}
+
+
+
+source(here("R/denoms.R"))
+
+
+tab.collecting = xtabs(nhhmem ~ personcwater, hh) %>% 
+  rbind(xtabs(nhhmem ~ as_factor(HH6) + personcwater, hh)) %>% 
+  rbind(xtabs(nhhmem ~ as_factor(HH7) + personcwater, hh)) %>%
+  rbind(xtabs(nhhmem ~ as_factor(helevel) + personcwater, hh)) %>% 
+  rbind(xtabs(nhhmem ~ as_factor(windex5) + personcwater, hh)) 
+
+
+
+
+
+
+
+tab.without <- xtabs(nhhmem ~ withoutWater, hh) %>% 
+  rbind(xtabs(nhhmem ~ as_factor(HH6) + withoutWater, hh)) %>% 
+  rbind(xtabs(nhhmem ~ as_factor(HH7) + withoutWater, hh)) %>%
+  rbind(xtabs(nhhmem ~ as_factor(helevel) + withoutWater, hh)) %>% 
+  rbind(xtabs(nhhmem ~ as_factor(windex5) + withoutWater, hh)); tab.without = round(tab.without[,2])
+
+
+tab <- cbind(tab.without, N$Count, tab.collecting, tab.without, tab.without)
+rownames(tab)[1] = "Total"; 
+
+tab[, 1] = (100 * tab[,1]) / tab[, 2]
+
+tab[,3:8] = (100 * tab[,3:8]) / tab[, 9]
+
+
+
+
+
+labs = c(label(hh$withoutWater), label(hh$nhhmem), levels(as_factor(hh$personcwater)), "Total",
+         "Number of household members without drinking water on site")
+tab.1.3 = tab
+
+colnames(tab.1.3) = labs
+
+
+
+
+denom = tab.1.3[, 9]
+ind = ifelse(denom < 25, 1, 
+               ifelse(denom %in% 25:49, 2,
+                      3))
+
+tab.1.3[ , c(1,3:7)] = apply(tab[, c(1, 3:7)], 2, function(x) round(x, digits = 1))
+tab.1.3[, c(2, 8, 9)] = apply(tab[, c(2, 8, 9)], 2, function(x) formatC(x, format = "d", big.mark = ","))
+
+tab.1.3[ind == 1, 3:7] = "(*)"
+
+```
+
+
+
+```{r}
+
+
+
+
+
+
+```
+
+
 
 
 # WS 1.5
@@ -940,9 +1058,83 @@ hh = hh %>% mutate(basictotal = ifelse(drinking == 1 & sanitation == 1 & handwas
 ```{r}
 
 
+wm = read_sav(here("Data/Tunisia_wm.sav"))
+
+names(wm) = sapply(names(wm), tolower)
+
+
+
+##### end commonVarswm.sav
+
+
+wm = wm %>% filter(wm17 == 1, !is.na(un16))
+
+
+# wmweight - weight data
+
+wm = wm %>% mutate(numWomen = 1 * wmweight) %>% 
+  mutate(amaterialre = ifelse(un19 == 1, 100, 0),
+         amaterialnonre = ifelse(un19 == 2, 100, 0),
+         amaterialDKmissing = ifelse(un19 >= 8, 100, 0),
+         materialother = ifelse(un18 == 2, 100, 0),
+         materialDK = ifelse(un18 >=8, 100, 0),
+         appropriatematerial = ifelse(un18 == 1, 100, 0),
+         privateplace = ifelse(un17 == 1, 100, 0),
+         totalprct = 100,
+         materialprivateplace = ifelse(privateplace == 100 & un18 == 1, 100, 0),
+         layer0 = 0, 
+         layer1 = 0)
+
+
 
 
 ```
+
+
+
+
+
+# WS 4.2
+
+```{r}
+
+
+wm = read_sav(here("Data/Tunisia_wm.sav"))
+
+
+source(here("R/commonVarsWM.R"))
+
+wm = wm %>% filter(wm17 == 1, !is.na(un16)) %>% mutate(numWomen = 1 * wmweight) %>% 
+  mutate(noparticipation = ifelse(un16 == 1, 100, 0))
+
+
+
+
+
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
