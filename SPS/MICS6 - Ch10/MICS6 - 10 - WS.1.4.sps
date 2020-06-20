@@ -161,7 +161,7 @@ ctables
   /slabels position=column visible = no
   /titles title=
     "Table WS.1.4: Time spent collecting water "
-    "Average time spent collecting water by person usually responsible for water collection, " + surveyname
+    "Average time spent collecting water by person usually responsible for water collection, " + surveyname   
   .
 
 * Ctables command in French.  
@@ -177,7 +177,7 @@ ctables
          + drinkingWater [c]
          + ethnicity [c]
          + windex5 [c]
-   by
+   by                     
              averagetime[c][layerrowpct.validn '' f5.1]
          + total100 [s] [mean '' f5.1]
          + nhhmem [s] [count '' f5.0]

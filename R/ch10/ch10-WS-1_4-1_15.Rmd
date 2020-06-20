@@ -25,6 +25,9 @@ library(tableone); library(sjPlot);
 # WS 1.4
 
 
+
+Merge the person collecting the water with the household file. 
+
 ```{r}
 
 
@@ -33,15 +36,12 @@ hl <- read_sav(here("Data/Tunisia_hl.sav")) %>% arrange(HH1, HH2, HL1)
 
 hh <- read_sav(here("Data/Tunisia_hh.sav")) %>% arrange(HH1, HH2)
 
-```
 
-
-```{r}
-
-
-hl <- hl %>% mutate(elevel = ifelse(ED5A %in% c(3:4), 3,
-                                  ifelse(ED5A %in% c(8:9), 9,
-                                         0)))
+hl <- hl %>% 
+  mutate(elevel = ifelse(ED5A == 1, 1,
+                         ifelse(ED5A == 2, 2,
+                                ifelse(ED5A %in% 3:4, 3,
+                                       ifelse(ED5A %in% 8:9, 9, 0)))))
 
 var_lab(hl$elevel) = "Education"
 val_lab(hl$elevel) = make_labels("
@@ -59,25 +59,16 @@ tmp.person.cwater = hl %>% select(HH1, HH2, HL1, HL4, HL6, elevel) %>% rename(WS
 
 
 
-```
-
-
-
-Merge the person collecting the water with the household file. 
-
-```{r}
-
-
-df = hh %>% left_join(tmp.person.cwater, by = c("HH1", "HH2", "WS5")) %>% 
+hh = hh %>% left_join(tmp.person.cwater, by = c("HH1", "HH2", "WS5")) %>% 
   filter(HH46 == 1, WS4 > 0) %>% 
   mutate(hhweightHH48 = HH48 * hhweight) %>%
   mutate(nhhmem = hhweightHH48)
 
 
-var_lab(df$nhhmem) = "Number of household members without drinking water on premises and where household members are primarily responsible for collecting water"
+var_lab(hh$nhhmem) = "Number of household members without drinking water on premises and where household members are primarily responsible for collecting water"
 
 
-df <- df %>% 
+hh <- hh %>% 
   mutate(Time = NA) %>% 
   mutate(Time = ifelse(WS4 < 995 & WS6 < 95, floor(WS4 * WS6 / 7), Time)) %>% 
   mutate(Time = ifelse(Time %in% 0:30, 1,
@@ -85,83 +76,55 @@ df <- df %>%
                               ifelse(Time %in% 61:180, 3,
                                      ifelse(Time >= 181, 4, Time)))))
 
-df <- df %>% mutate(averagetime = Time) %>% 
+hh <- hh %>% mutate(averagetime = Time) %>% 
   mutate(averagetime = ifelse(WS4 > 995 | WS6 > 95, 9, averagetime))
 
 
-df <- df %>% mutate(age1 = ifelse(HL6 %in% 0:14, 1,
+hh <- hh %>% mutate(age1 = ifelse(HL6 %in% 0:14, 1,
+                                  ifelse(HL6 %in% 15:17, 2, 
                                   ifelse(HL6 %in% 15:49, 3,
-                                         ifelse(HL6 %in% 50:95, 4, 9))))
+                                         ifelse(HL6 %in% 50:95, 4, 9))))) # age age1
 
-var_lab(df$age1) = "Age"
 
-df = df %>% mutate(age2 = ifelse(HL6 %in% 15:17, 2, age1))
 
-val_lab(df$age1) = make_labels("
+
+
+var_lab(hh$age1) = "Age"; var_lab(hh$age2)
+
+hh = hh %>% mutate(age2 = ifelse(HL6 %in% 15:17, 2, NA))
+
+
+
+val_lab(hh$age1) = make_labels("
 1 <15
-2 5-14
+2 15-17
 3 15-49
 4 50+
-9 DK/Missing
+             ")
+val_lab(hh$age2) = make_labels("
+
+2 15-49
+
+
              ")
 
+val_lab(hh$averagetime) = make_labels("
+    1 Up to 30 minutes
+    2 From 31 mins to 1 hour
+    3 Over 1 hour to 3 hours
+    4 Over 3 hours
+    9 DK/Missing
+                                      ")
 
 
-
-
-```
-
-
-```{r}
-
-hh = df
 
 source(here("R/drinkingWater.R"))
 
 
- 
 
 ```
 
 
-```{r}
-
-
-N <- hh %>% dplyr::summarize(Count = sum(nhhmem)) %>% 
-  rbind.data.frame(hh %>% group_by(as_factor(HH6)) %>% 
-                     dplyr::summarize(Count = sum(nhhmem)) %>% select(Count)) %>% 
-  rbind.data.frame(hh %>% group_by(as_factor(HH7)) %>% 
-                     dplyr::summarize(Count = sum(nhhmem)) %>% select(Count)) %>% 
-  rbind.data.frame(hh %>% group_by(as_factor(helevel)) %>% 
-                     dplyr::summarize(Count = sum(nhhmem)) %>% select(Count)) %>% 
-  
-  
-  rbind.data.frame(hh %>% group_by(as_factor(age1)) %>% 
-                     dplyr::summarize(Count = sum(nhhmem)) %>% select(Count)) %>% 
-  
-  rbind.data.frame(hh %>% group_by(as_factor(drinkingWater)) %>% 
-                     dplyr::summarize(Count = sum(nhhmem)) %>% select(Count)) %>% 
-  
-  rbind.data.frame(hh %>% group_by(as_factor(HHSEX)) %>% 
-                     dplyr::summarize(Count = sum(nhhmem)) %>% select(Count)) %>% 
-  
-  
-  
-  rbind.data.frame(hh %>% group_by(as_factor(windex5)) %>% 
-                     dplyr::summarize(Count = sum(nhhmem)) %>% select(Count))
-
-N$Count = round(N$Count)
-N <- N %>% mutate(Total = Count)
-N <- data.frame(N); colnames(N)[1] = label(hh$nhhmem)
-rownames(N) = c("Total", levels(as_factor(hh$HH6)), levels(as_factor(hh$HH7)), levels(as_factor(hh$helevel)), levels(as_factor(hh$age1)),
-                levels(as_factor(hh$drinkingWater)), levels(as_factor(hh$HHSEX)),
-                levels(as_factor(hh$windex5)))
-
-xtabs(nn)
-xtabs(nhhmem ~ HH6, df)
-
-
-```
 
 
 ## SFR 1.4
@@ -169,71 +132,82 @@ xtabs(nhhmem ~ HH6, df)
 ```{r}
 
 
+# revisit for the mrsets issue
 
-source(here("R/denoms.R"))
-
-
-tab.collecting = xtabs(nhhmem ~ personcwater, hh) %>% 
-  rbind(xtabs(nhhmem ~ as_factor(HH6) + personcwater, hh)) %>% 
-  rbind(xtabs(nhhmem ~ as_factor(HH7) + personcwater, hh)) %>%
-  rbind(xtabs(nhhmem ~ as_factor(helevel) + personcwater, hh)) %>% 
-  rbind(xtabs(nhhmem ~ as_factor(windex5) + personcwater, hh)) 
+hh$nn = 1
 
 
+vars.list = list(as_factor(hh$HH6), as_factor(hh$HH7), as_factor(hh$elevel), as_factor(hh$age1),
+                 as_factor(hh$HL4), as_factor(hh$drinkingWater), as_factor(hh$windex5))
 
+unweight.list = lapply(vars.list, function(x) xtabs(nn ~ x, hh) %>% data.frame() %>% select(2))
 
-
-
-
-tab.without <- xtabs(nhhmem ~ withoutWater, hh) %>% 
-  rbind(xtabs(nhhmem ~ as_factor(HH6) + withoutWater, hh)) %>% 
-  rbind(xtabs(nhhmem ~ as_factor(HH7) + withoutWater, hh)) %>%
-  rbind(xtabs(nhhmem ~ as_factor(helevel) + withoutWater, hh)) %>% 
-  rbind(xtabs(nhhmem ~ as_factor(windex5) + withoutWater, hh)); tab.without = round(tab.without[,2])
-
-
-tab <- cbind(tab.without, N$Count, tab.collecting, tab.without, tab.without)
-rownames(tab)[1] = "Total"; 
-
-tab[, 1] = (100 * tab[,1]) / tab[, 2]
-
-tab[,3:8] = (100 * tab[,3:8]) / tab[, 9]
+unweighted = do.call(rbind.data.frame, unweight.list)
 
 
 
 
 
-labs = c(label(hh$withoutWater), label(hh$nhhmem), levels(as_factor(hh$personcwater)), "Total",
-         "Number of household members without drinking water on site")
-tab.1.3 = tab
+taba = xtabs(nhhmem ~ averagetime, hh) %>% 
+  rbind(xtabs(nhhmem ~ as_factor(HH6) + averagetime , hh)) %>% 
+  rbind(xtabs(nhhmem ~ as_factor(HH7) + averagetime , hh)) %>% 
+  rbind(xtabs(nhhmem ~ as_factor(elevel) + averagetime , hh)) %>% 
+  rbind(xtabs(nhhmem ~ as_factor(age1) + averagetime, hh )) %>% 
+  rbind(xtabs(nhhmem ~ as_factor(HL4) + averagetime , hh)) %>% 
+  rbind(xtabs(nhhmem ~ drinkingWater + averagetime , hh)) %>% 
+  rbind(xtabs(nhhmem ~ as_factor(windex5) + averagetime , hh)) 
 
-colnames(tab.1.3) = labs
+Total = rowSums(taba); taba = cbind(taba, Total)
+
+taba <- apply(taba, 2, function(x) 100*x / Total) %>% round(digits = 1) %>% cbind(round(Total, digits = 0)) 
+
+
+colnames(taba) = c(levels(as_factor(hh$averagetime))[c(1:3,5)], "Total", label(hh$nhhmem))
+
+rownames(taba) = c("Total", levels(as_factor(hh$HH6)), levels(as_factor(hh$HH7)),
+                   levels(as_factor(hh$elevel)), levels(as_factor(hh$age1)),
+                   levels(as_factor(hh$HL4)), levels(as_factor(hh$drinkingWater)),
+                   levels(as_factor(hh$windex5)))
 
 
 
 
-denom = tab.1.3[, 9]
-ind = ifelse(denom < 25, 1, 
-               ifelse(denom %in% 25:49, 2,
-                      3))
 
-tab.1.3[ , c(1,3:7)] = apply(tab[, c(1, 3:7)], 2, function(x) round(x, digits = 1))
-tab.1.3[, c(2, 8, 9)] = apply(tab[, c(2, 8, 9)], 2, function(x) formatC(x, format = "d", big.mark = ","))
 
-tab.1.3[ind == 1, 3:7] = "(*)"
+
+
+denom = unweighted$Freq
+
+#ind = ifelse(denom < 25, 1, 
+#               ifelse(denom %in% 25:49, 2,
+#                      3))
+
+#tab.1.3[ , c(1,3:7)] = apply(tab[, c(1, 3:7)], 2, function(x) round(x, digits = 1))
+#tab.1.3[, c(2, 8, 9)] = apply(tab[, c(2, 8, 9)], 2, function(x) formatC(x, format = "d", big.mark = ","))
+
+#tab.1.3[ind == 1, 3:7] = "(*)"
+
+
+
+taba %>% 
+  kable(digits = 1, format.args = list(big.mark = ",", scientific = FALSE)) %>% 
+  kable_styling(c("striped"), font_size = 12) %>% 
+  pack_rows(label(hh$HH6), 2, 3) %>% 
+  pack_rows(label(hh$HH7), 4, 10) %>% 
+  pack_rows(label(hh$elevel), 11, 15) %>%
+  pack_rows(label(hh$age1), 16, 19) %>% 
+  pack_rows(label(hh$HL4), 20, 21) %>% 
+  pack_rows(label(hh$drinkingWater), 22, 23) %>% 
+  pack_rows(label(hh$windex5), 24, 28) %>% 
+  add_header_above(c(" " = 1, "Average time spent collecting water per day" = 4, 
+                     " " = 2)) %>% 
+  add_header_above(c("Table 1.4: Time spent collecting water" = 7)) 
+
+
+
 
 ```
 
-
-
-```{r}
-
-
-
-
-
-
-```
 
 
 
@@ -272,6 +246,59 @@ val_lab(hh$WS8) = make_labels("
                               ")
 
 var_lab(hh$WS8) = "Main reason that the household members are unable to access water in sufficient quantities"
+
+```
+
+## SFR 1.5
+
+```{r, eval = F}
+
+
+
+
+
+
+hh$nn = 1
+
+
+vars.list = list(as_factor(hh$HH6), as_factor(hh$HH7), as_factor(hh$helevel), 
+                 as_factor(hh$drinkingWater), as_factor(hh$windex5))
+
+unweight.list = lapply(vars.list, function(x) xtabs(nn ~ x, hh) %>% data.frame() %>% select(2))
+
+unweighted = do.call(rbind.data.frame, unweight.list)
+
+
+
+
+
+taba = xtabs(nhhmem ~ averagetime, hh) %>% 
+  rbind(xtabs(nhhmem ~ as_factor(HH6) + averagetime , hh)) %>% 
+  rbind(xtabs(nhhmem ~ as_factor(HH7) + averagetime , hh)) %>% 
+  rbind(xtabs(nhhmem ~ as_factor(elevel) + averagetime , hh)) %>% 
+  rbind(xtabs(nhhmem ~ as_factor(age1) + averagetime, hh)) %>% 
+  rbind(xtabs(nhhmem ~ as_factor(HL4) + averagetime , hh)) %>% 
+  rbind(xtabs(nhhmem ~ drinkingWater + averagetime , hh)) %>% 
+  rbind(xtabs(nhhmem ~ as_factor(windex5) + averagetime , hh)) 
+
+Total = rowSums(taba); taba = cbind(taba, Total)
+
+taba <- apply(taba, 2, function(x) 100*x / Total) %>% round(digits = 1) %>% cbind(round(Total, digits = 0)) 
+
+
+colnames(taba) = c(levels(as_factor(hh$averagetime))[c(1:3,5)], "Total", label(hh$nhhmem))
+
+rownames(taba) = c("Total", levels(as_factor(hh$HH6)), levels(as_factor(hh$HH7)),
+                   levels(as_factor(hh$elevel)), levels(as_factor(hh$age1)),
+                   levels(as_factor(hh$HL4)), levels(as_factor(hh$drinkingWater)),
+                   levels(as_factor(hh$windex5)))
+
+
+
+
+
+
+
 
 ```
 
