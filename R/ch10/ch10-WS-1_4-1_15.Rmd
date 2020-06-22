@@ -82,17 +82,16 @@ hh <- hh %>% mutate(averagetime = Time) %>%
 
 
 hh <- hh %>% mutate(age1 = ifelse(HL6 %in% 0:14, 1,
-                                  ifelse(HL6 %in% 15:17, 2, 
                                   ifelse(HL6 %in% 15:49, 3,
-                                         ifelse(HL6 %in% 50:95, 4, 9))))) # age age1
+                                         ifelse(HL6 %in% 50:95, 4, 9)))) # age age1
 
 
-
-
-
-var_lab(hh$age1) = "Age"; var_lab(hh$age2)
 
 hh = hh %>% mutate(age2 = ifelse(HL6 %in% 15:17, 2, NA))
+
+var_lab(hh$age1) = "Age"; var_lab(hh$age2) = "Age"
+
+
 
 
 
@@ -122,50 +121,74 @@ val_lab(hh$averagetime) = make_labels("
 source(here("R/drinkingWater.R"))
 
 
+hh$nn = 1
 
 ```
 
 
 
 
+Table functions successful!
+
 ## SFR 1.4
 
 ```{r}
 
 
-# revisit for the mrsets issue
-
-hh$nn = 1
-
-
-vars.list = list(as_factor(hh$HH6), as_factor(hh$HH7), as_factor(hh$elevel), as_factor(hh$age1),
-                 as_factor(hh$HL4), as_factor(hh$drinkingWater), as_factor(hh$windex5))
-
-unweight.list = lapply(vars.list, function(x) xtabs(nn ~ x, hh) %>% data.frame() %>% select(2))
-
-unweighted = do.call(rbind.data.frame, unweight.list)
 
 
 
 
+row.vars = list(total(), hh$HH6, hh$HH7, hh$elevel, mrset(hh$age1, hh$age2), hh$HL4, hh$drinkingWater, hh$windex5)
+col.vars = list(hh$averagetime, total())
+hh.weight = hh$nhhmem
+cell.vars = hh$nn
 
-taba = xtabs(nhhmem ~ averagetime, hh) %>% 
-  rbind(xtabs(nhhmem ~ as_factor(HH6) + averagetime , hh)) %>% 
-  rbind(xtabs(nhhmem ~ as_factor(HH7) + averagetime , hh)) %>% 
-  rbind(xtabs(nhhmem ~ as_factor(elevel) + averagetime , hh)) %>% 
-  rbind(xtabs(nhhmem ~ as_factor(age1) + averagetime, hh )) %>% 
-  rbind(xtabs(nhhmem ~ as_factor(HL4) + averagetime , hh)) %>% 
-  rbind(xtabs(nhhmem ~ drinkingWater + averagetime , hh)) %>% 
-  rbind(xtabs(nhhmem ~ as_factor(windex5) + averagetime , hh)) 
-
-Total = rowSums(taba); taba = cbind(taba, Total)
-
-taba <- apply(taba, 2, function(x) 100*x / Total) %>% round(digits = 1) %>% cbind(round(Total, digits = 0)) 
+a = calc_cro_rpct(hh,
+    cell_vars = cell.vars,
+    col_vars = col.vars,
+    row_vars = row.vars,
+    weight = hh.weight,
+    total_row_position = "none") %>% data.frame() %>% select(-1)
 
 
-colnames(taba) = c(levels(as_factor(hh$averagetime))[c(1:3,5)], "Total", label(hh$nhhmem))
+b = calc_cro_cases(
+    hh,
+    cell_vars = cell.vars,
+    row_vars = row.vars,
+    col_vars = total(),
+    weight = nhhmem,
+    total_row_position = "none"
+  ) %>% data.frame() %>%  select(2)
 
-rownames(taba) = c("Total", levels(as_factor(hh$HH6)), levels(as_factor(hh$HH7)),
+
+
+unweighted <- calc_cro_cases(
+    hh,
+    cell_vars = nn,
+    row_vars = row.vars,
+    col_vars = total(),
+    total_row_position = "none"
+  ) %>% data.frame() %>% select(2) %>% 
+  mutate(ind = ifelse(X.Total < 25, 1, 
+               ifelse(X.Total %in% 25:49, 2,
+                      3)))
+
+
+a = round(a, digits = 1); b = round(b, digits = 0)
+
+tab = a %>% cbind.data.frame(b) 
+tab = tab[, -4]
+
+
+
+tab = lapply(tab, function(x) ifelse(is.na(x), 0, x)) %>% data.frame()
+
+
+
+colnames(tab) = c(levels(as_factor(hh$averagetime))[c(1:4)], "Total", label(hh$nhhmem))
+
+rownames(tab) = c("Total", levels(as_factor(hh$HH6)), levels(as_factor(hh$HH7)),
                    levels(as_factor(hh$elevel)), levels(as_factor(hh$age1)),
                    levels(as_factor(hh$HL4)), levels(as_factor(hh$drinkingWater)),
                    levels(as_factor(hh$windex5)))
@@ -174,23 +197,21 @@ rownames(taba) = c("Total", levels(as_factor(hh$HH6)), levels(as_factor(hh$HH7))
 
 
 
+for (i in 1:nrow(tab)) 
+  for (j in 1:ncol(tab)) 
+  {
+    tab[i, j] = ifelse(unweighted$ind[i] == 1, "(*)", 
+                       ifelse(unweighted$ind[i] == 2, paste0("(", tab[i,j], ")"),
+                              tab[i, j]))
+  }
 
 
 
-denom = unweighted$Freq
-
-#ind = ifelse(denom < 25, 1, 
-#               ifelse(denom %in% 25:49, 2,
-#                      3))
-
-#tab.1.3[ , c(1,3:7)] = apply(tab[, c(1, 3:7)], 2, function(x) round(x, digits = 1))
-#tab.1.3[, c(2, 8, 9)] = apply(tab[, c(2, 8, 9)], 2, function(x) formatC(x, format = "d", big.mark = ","))
-
-#tab.1.3[ind == 1, 3:7] = "(*)"
 
 
 
-taba %>% 
+
+tab %>% 
   kable(digits = 1, format.args = list(big.mark = ",", scientific = FALSE)) %>% 
   kable_styling(c("striped"), font_size = 12) %>% 
   pack_rows(label(hh$HH6), 2, 3) %>% 
@@ -203,6 +224,9 @@ taba %>%
   add_header_above(c(" " = 1, "Average time spent collecting water per day" = 4, 
                      " " = 2)) %>% 
   add_header_above(c("Table 1.4: Time spent collecting water" = 7)) 
+
+
+
 
 
 
@@ -271,23 +295,22 @@ unweighted = do.call(rbind.data.frame, unweight.list)
 
 
 
+taba = xtabs(nhhmem ~ WS8 , hh) %>% 
+  rbind(xtabs(nhhmem ~ as_factor(HH6) + sufficentwater + nmemnotsufficent , hh)) %>% 
+  rbind(xtabs(nhhmem ~ as_factor(HH7) + sufficentwater  + nmemnotsufficent  , hh)) %>% 
+  rbind(xtabs(nhhmem ~ as_factor(helevel) + sufficentwater  + nmemnotsufficent , hh)) %>% 
+  rbind(xtabs(nhhmem ~ drinkingWater + sufficentwater + nmemnotsufficent , hh)) %>% 
+  rbind(xtabs(nhhmem ~ as_factor(windex5) + sufficentwater + nmemnotsufficent , hh)) 
 
+taba = xtabs(nhhmem ~ )
 
-taba = xtabs(nhhmem ~ averagetime, hh) %>% 
-  rbind(xtabs(nhhmem ~ as_factor(HH6) + averagetime , hh)) %>% 
-  rbind(xtabs(nhhmem ~ as_factor(HH7) + averagetime , hh)) %>% 
-  rbind(xtabs(nhhmem ~ as_factor(elevel) + averagetime , hh)) %>% 
-  rbind(xtabs(nhhmem ~ as_factor(age1) + averagetime, hh)) %>% 
-  rbind(xtabs(nhhmem ~ as_factor(HL4) + averagetime , hh)) %>% 
-  rbind(xtabs(nhhmem ~ drinkingWater + averagetime , hh)) %>% 
-  rbind(xtabs(nhhmem ~ as_factor(windex5) + averagetime , hh)) 
 
 Total = rowSums(taba); taba = cbind(taba, Total)
 
 taba <- apply(taba, 2, function(x) 100*x / Total) %>% round(digits = 1) %>% cbind(round(Total, digits = 0)) 
 
 
-colnames(taba) = c(levels(as_factor(hh$averagetime))[c(1:3,5)], "Total", label(hh$nhhmem))
+colnames(taba) = c(levels(as_factor(hh$sufficentwater))[c(1:3,5)], "Total", label(hh$nhhmem))
 
 rownames(taba) = c("Total", levels(as_factor(hh$HH6)), levels(as_factor(hh$HH7)),
                    levels(as_factor(hh$elevel)), levels(as_factor(hh$age1)),
@@ -302,6 +325,7 @@ rownames(taba) = c("Total", levels(as_factor(hh$HH6)), levels(as_factor(hh$HH7))
 
 
 ```
+
 
 
 
