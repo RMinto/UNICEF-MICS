@@ -202,11 +202,8 @@ for (i in 1:nrow(tab))
   {
     tab[i, j] = ifelse(unweighted$ind[i] == 1, "(*)", 
                        ifelse(unweighted$ind[i] == 2, paste0("(", tab[i,j], ")"),
-                              tab[i, j]))
+                              tab[i, j])) # else
   }
-
-
-
 
 
 
@@ -267,16 +264,24 @@ var_lab(hh$nmemnotsufficent) = "Number of household members unable to access wat
 
 hh <- hh %>% mutate(WS8 = ifelse(WS8 == 8, 9, WS8)); 
 val_lab(hh$WS8) = make_labels("
+1 EAU NON DISSPONIBLE A LA SOURCE
+3 SOURCE PAS ACCESSIBLE
+6 AUTRE
+
                               9 DK/Missing
                               ")
 
 var_lab(hh$WS8) = "Main reason that the household members are unable to access water in sufficient quantities"
 
+
+
+
+
 ```
 
 ## SFR 1.5
 
-```{r, eval = F}
+```{r}
 
 
 
@@ -286,38 +291,90 @@ var_lab(hh$WS8) = "Main reason that the household members are unable to access w
 hh$nn = 1
 
 
-vars.list = list(as_factor(hh$HH6), as_factor(hh$HH7), as_factor(hh$helevel), 
-                 as_factor(hh$drinkingWater), as_factor(hh$windex5))
-
-unweight.list = lapply(vars.list, function(x) xtabs(nn ~ x, hh) %>% data.frame() %>% select(2))
-
-unweighted = do.call(rbind.data.frame, unweight.list)
 
 
 
-taba = xtabs(nhhmem ~ WS8 , hh) %>% 
-  rbind(xtabs(nhhmem ~ as_factor(HH6) + sufficentwater + nmemnotsufficent , hh)) %>% 
-  rbind(xtabs(nhhmem ~ as_factor(HH7) + sufficentwater  + nmemnotsufficent  , hh)) %>% 
-  rbind(xtabs(nhhmem ~ as_factor(helevel) + sufficentwater  + nmemnotsufficent , hh)) %>% 
-  rbind(xtabs(nhhmem ~ drinkingWater + sufficentwater + nmemnotsufficent , hh)) %>% 
-  rbind(xtabs(nhhmem ~ as_factor(windex5) + sufficentwater + nmemnotsufficent , hh)) 
 
-taba = xtabs(nhhmem ~ )
+row.vars = list(total(), hh$HH6, hh$HH7, hh$helevel, hh$drinkingWater, hh$windex5)
+col.vars = list(hh$sufficentwater, hh$WS8, hh$nmemnotsufficent, total())
+hh.weight = hh$nhhmem
+cell.vars = hh$nn
 
 
-Total = rowSums(taba); taba = cbind(taba, Total)
 
-taba <- apply(taba, 2, function(x) 100*x / Total) %>% round(digits = 1) %>% cbind(round(Total, digits = 0)) 
+taba = calc_cro_rpct(hh, cell_vars = total(),
+               row_vars = row.vars, col_vars = hh$sufficentwater, 
+               weight = hh.weight, total_row_position = "none") %>% data.frame() %>% select(3) %>% round(digits = 1)
+
+tabb = calc_cro_cases(hh,
+                   cell_vars = cell.vars, row_vars = row.vars, 
+                   col_vars = total(), weight = hh.weight, total_row_position = "none") %>% data.frame() %>% select(2) %>% round(digits = 0)
+
+tabc = calc_cro_rpct(hh,
+                  cell_vars = cell.vars, 
+                  row_vars = row.vars, 
+                  col_vars = list(hh$WS8, total()),
+                  weight = hh.weight, total_row_position = "none") %>% data.frame() %>% select(-1) %>% round(digits = 1)
+
+tabd = calc_cro_cases(hh, cell_vars = cell.vars, row_vars = row.vars, col_vars = hh$nmemnotsufficent,
+                      weight = hh.weight, total_row_position = "none") %>% data.frame() %>% select(3) %>% round(digits = 0)
 
 
-colnames(taba) = c(levels(as_factor(hh$sufficentwater))[c(1:3,5)], "Total", label(hh$nhhmem))
+tab = taba %>% cbind(tabb, tabc, tabd)
 
-rownames(taba) = c("Total", levels(as_factor(hh$HH6)), levels(as_factor(hh$HH7)),
-                   levels(as_factor(hh$elevel)), levels(as_factor(hh$age1)),
-                   levels(as_factor(hh$HL4)), levels(as_factor(hh$drinkingWater)),
+
+
+unweighted <- calc_cro_cases(
+    hh,
+    cell_vars = nn,
+    row_vars = row.vars,
+    col_vars = total(),
+    total_row_position = "none"
+  ) %>% data.frame() %>% select(2) %>% 
+  mutate(ind = ifelse(X.Total < 25, 1, 
+               ifelse(X.Total %in% 25:49, 2,
+                      3)))
+
+
+
+# tab = lapply(tab, function(x) ifelse(is.na(x), 0, x)) %>% data.frame()
+
+
+
+colnames(tab) = c(label(hh$sufficentwater), label(hh$nhhmem), levels(as_factor(hh$WS8)), "total", label(hh$nmemnotsufficent))
+
+rownames(tab) = c("Total", levels(as_factor(hh$HH6)), levels(as_factor(hh$HH7)),
+                   levels(as_factor(hh$helevel)), levels(as_factor(hh$drinkingWater)),
                    levels(as_factor(hh$windex5)))
 
 
+
+
+
+for (i in 1:nrow(tab)) 
+  for (j in 1:ncol(tab)) 
+  {
+    tab[i, j] = ifelse(unweighted$ind[i] == 1, "(*)", 
+                       ifelse(unweighted$ind[i] == 2, paste0("(", tab[i,j], ")"),
+                              tab[i, j])) # else
+  }
+
+
+
+
+tab %>% 
+  kable(digits = 1, format.args = list(big.mark = ",", scientific = FALSE)) %>% 
+  kable_styling(c("striped"), font_size = 12) %>% 
+  pack_rows(label(hh$HH6), 2, 3) %>% 
+  pack_rows(label(hh$HH7), 4, 10) %>% 
+  pack_rows(label(hh$helevel), 11, 15) %>%
+  pack_rows(label(hh$drinkingWater), 16, 17) %>% 
+  pack_rows(label(hh$windex5), 18, 22) %>% 
+  add_header_above(c(" " = 3, "Main reason that the household members are unable to access water in sufficient quantities" = 5, " " = 1)) %>% 
+  add_header_above(c("Table WS 1.5: Availability of sufficient drinking water when needed \n Percentage of household members with drinking water
+                   available when needed and percent distribution of the main reasons 
+                   household members unable to access water in suficient quantities when needed" = 9))
+  
 
 
 
@@ -358,6 +415,8 @@ hh <- hh %>% mutate(Risk_S = ifelse(EC_100_S %in% 1:10, 1,
                                                     ifelse(EC_100_S >= 102, 9, EC_100_S)))))
 
 
+
+
 var_lab(hh$Risk_S) = "Risk level based on number of E. coli per 100 mL"
 val_lab(hh$Risk_S) = make_labels("
                                  0 Low (<1 per 100 mL)
@@ -391,6 +450,8 @@ hh = hh %>% mutate(unimpdrinkingWaterSource = ifelse(WS1 %in% c(32, 42), 21, 22)
 
 hh <- hh %>% mutate(watersource = ifelse(impdrinkingWaterSource %in% 11:17, 10, 
                                          ifelse(unimpdrinkingWaterSource %in% 21:22, 20, NA)))
+
+
 
 
 val_lab(hh$watersource) = make_labels("
