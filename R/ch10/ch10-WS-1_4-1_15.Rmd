@@ -845,12 +845,14 @@ hh <- read_sav(here("Data/Tunisia_hh.sav")) %>% arrange(HH1, HH2) %>%
   mutate(nhhmem = wqsweightHH48)
 
 var_lab(hh$nhhmem) = "Number of household members"
+
 source(here("R/drinkingWater.R"))
 
 
 hh <- hh %>% mutate(EC_100_S = NA) %>% 
   mutate(EC_100_S = ifelse(WQ27 < 997 & WQ27 >= 100, 101,
                            ifelse(WQ27 < 101 | WQ27 >= 997, WQ27, EC_100_S)))
+
 
 hh <- hh %>% mutate(Risk_S = ifelse(EC_100_S %in% 1:10, 1,
                                       ifelse(EC_100_S %in% 11:100, 2,
@@ -945,8 +947,101 @@ val_lab(hh$watersource) = make_labels("
 ## SFR 1.8
 
 
-```{r}
+```{r, eval = F}
 
+
+
+
+# mrset(hh$watersource, hh$impdrinkingWaterSource, hh$unimpdrinkingWaterSource)
+
+hh$nn = 1
+
+
+row.vars = list(total(), hh$HH6, hh$HH7, hh$helevel, mrset(hh$watersource, hh$impdrinkingWaterSource, hh$unimpdrinkingWaterSource),
+                hh$windex5)
+
+col.vars = list(hh$sufficentwater, hh$WS8, hh$nmemnotsufficent, total())
+hh.weight = hh$nhhmem
+cell.vars = hh$nn
+
+
+
+taba = calc_cro_rpct(hh, cell_vars = total(),
+               row_vars = row.vars, 
+               col_vars = list(hh$WithoutEC_S, hh$sufficentwater, hh$wpremises, hh$indSDG611), 
+               weight = hh.weight, total_row_position = "none") %>% data.frame() %>% slice(-c(27:30)) %>% 
+  select(c(3, 5, 7, 9, 10:12)) %>% 
+    round(digits = 1)
+
+
+
+tabb = calc_cro_rpct(hh,
+                   cell_vars = cell.vars, row_vars = row.vars, 
+                   col_vars = hh$EC_H, weight = hh.weight, total_row_position = "none") %>% 
+  data.frame() %>% slice(-c(27:30)) %>% select(3) %>% round(digits = 1)
+
+
+
+tabc = calc_cro_cases(hh,
+                  cell_vars = cell.vars, 
+                  row_vars = row.vars, 
+                  col_vars = total(),
+                  weight = hh.weight, total_row_position = "none") %>% data.frame() %>% 
+  select(2) %>% round(digits = 0) %>% slice(-c(27:30))
+
+
+tab = taba %>% cbind(tabb, tabc)
+
+
+
+unweighted <- calc_cro_cases(
+    hh,
+    cell_vars = nn,
+    row_vars = row.vars,
+    col_vars = total(),
+    total_row_position = "none"
+  ) %>% data.frame() %>% select(2) %>% 
+  mutate(ind = ifelse(X.Total < 25, 1, 
+               ifelse(X.Total %in% 25:49, 2,
+                      3))) %>% slice(-c(27:30))
+
+
+
+
+
+colnames(tab) = c(levels(as_factor(hh$Risk_H))[1:4], "Total", label(hh$EC_H), label(hh$nhhmem))
+
+rownames(tab) = c("Total", levels(as_factor(hh$HH6)), levels(as_factor(hh$HH7)),
+                   levels(as_factor(hh$helevel)), levels(as_factor(hh$watersource)),
+                   levels(as_factor(hh$windex5)))
+
+
+
+
+
+for (i in 1:nrow(tab)) 
+  for (j in 1:ncol(tab)) 
+  {
+    tab[i, j] = ifelse(unweighted$ind[i] == 1, "(*)", 
+                       ifelse(unweighted$ind[i] == 2, paste0("(", tab[i,j], ")"),
+                              tab[i, j])) # else
+  }
+
+
+
+
+tab %>% 
+  kable(digits = 1, format.args = list(big.mark = ",", scientific = FALSE)) %>% 
+  kable_styling(c("striped"), font_size = 12) %>% 
+  pack_rows(label(hh$HH6), 2, 3) %>% 
+  pack_rows(label(hh$HH7), 4, 10) %>% 
+  pack_rows(label(hh$helevel), 11, 15) %>%
+  pack_rows(label(hh$watersource), 16, 25) %>% 
+  pack_rows(label(hh$windex5), 26, 30) %>% 
+  add_header_above(c(" " = 2, "Risk level based on the number of E. coli per 100 mL" = 4, " " = 2)) %>% 
+  add_header_above(c("Table WS 1.7: Quality of source drinking water \n Percentage of household population at risk of faecal contamination based on
+                     number of E. coli detected in source drinking water," = 8))
+  
 
 
 
@@ -1018,11 +1113,106 @@ var.labs = list(boil = "Boil", bleach = "Add bleach / chlorine", cloth = "Strain
                 waterFilter = "Use water filter", solar = "Solar disinfection", stand = "Let it stand and settle", other = "Other", dkmissing = "Dk/Missing")
 
 
+var_lab(hh$boil) = "Boil"; var_lab(hh$bleach) = "Add bleach / chlorine"; var_lab(hh$cloth) = "Strain through a cloth"
+var_lab(hh$waterFilter) = "Use water filter"; var_lab(hh$solar) = "Solar disinfection"; var_lab(hh$stand) = "Let it stand and settle"
+var_lab(hh$other) = "Other"; var_lab(hh$dkmissing) = "DK/Missing"; var_lab(hh$none) = "None"
+
+```
+
+
+
+## SFR 1.9
+
+```{r}
+
+
+# mrset(hh$watersource, hh$impdrinkingWaterSource, hh$unimpdrinkingWaterSource)
+
+hh$nn = 1
+
+
+row.vars = list(total(), hh$HH6, hh$HH7, hh$helevel, hh$drinkingWater, hh$windex5)
+
+col.vars = list(hh$sufficentwater, hh$WS8, hh$nmemnotsufficent, total())
+hh.weight = hh$nhhmem
+cell.vars = hh$nn
+
+
+
+taba = calc_cro_rpct(hh, hh$nn,
+               row_vars = row.vars, 
+               col_vars = list(hh$none, hh$boil, hh$bleach, hh$cloth, hh$waterFilter, hh$solar, hh$stand, hh$other, hh$dkmissing, hh$appropriate), 
+               weight = hh.weight, total_row_position = "none") %>% data.frame() %>% 
+  select(c(3, 5, 7, 9, 11, 13, 15, 17, 18, 20)) %>% round(digits = 1)
+
+
+tabb = calc_cro_cases(hh, cell_vars = hh$nn,
+                      row_vars = row.vars,
+                      col_vars = total(),
+                      weight = hh.weight, 
+                      total_row_position = "none") %>% data.frame() %>% select(2) %>% round(digits = 0)
+
+
+
+
+tab = taba %>% cbind(tabb)
+tab[,9] = tab[,9] - 100
+
+
+unweighted <- calc_cro_cases(
+    hh,
+    cell_vars = nn,
+    row_vars = row.vars,
+    col_vars = total(),
+    total_row_position = "none"
+  ) %>% data.frame() %>% select(2) %>% 
+  mutate(ind = ifelse(X.Total < 25, 1, 
+               ifelse(X.Total %in% 25:49, 2,
+                      3))) 
+
+
+
+
+
+colnames(tab) = c(label(hh$none), label(hh$boil), label(hh$bleach), label(hh$cloth), label(hh$waterFilter), label(hh$solar),
+                  label(hh$stand), label(hh$other), label(hh$dkmissing), label(hh$appropriate), label(hh$nhhmem))
+
+rownames(tab) = c("Total", levels(as_factor(hh$HH6)), levels(as_factor(hh$HH7)),
+                   levels(as_factor(hh$helevel)), levels(as_factor(hh$drinkingWater)),
+                   levels(as_factor(hh$windex5)))
+
+
+
+
+
+for (i in 1:nrow(tab)) 
+  for (j in 1:ncol(tab)) 
+  {
+    tab[i, j] = ifelse(unweighted$ind[i] == 1, "(*)", 
+                       ifelse(unweighted$ind[i] == 2, paste0("(", tab[i,j], ")"),
+                              tab[i, j])) # else
+  }
+
+
+
+
+tab %>% 
+  kable(digits = 1, format.args = list(big.mark = ",", scientific = FALSE)) %>% 
+  kable_styling(c("striped"), font_size = 12) %>% 
+  pack_rows(label(hh$HH6), 2, 3) %>% 
+  pack_rows(label(hh$HH7), 4, 10) %>% 
+  pack_rows(label(hh$helevel), 11, 15) %>%
+  pack_rows(label(hh$drinkingWater), 16, 17) %>% 
+  pack_rows(label(hh$windex5), 18, 22) %>% 
+  add_header_above(c(" " = 2, "Water treatment method used in the household" = 9, " " = 1)) %>% 
+  add_header_above(c("Table WS 1.9: Household water treatment \n Percentage of household population by drinking water treatment method used in the
+                     household and the percentage who are using an appropriate treatment method" = 12))
+  
+
 
 
 
 ```
-
 
 
 
