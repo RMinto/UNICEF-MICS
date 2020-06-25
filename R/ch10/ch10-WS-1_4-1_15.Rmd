@@ -1265,9 +1265,132 @@ val_lab(hh$numHouseholdsObs) = make_labels("
                                            1 Number of household members where handwashing facility was observed
                                            ")
 
+var_lab(hh$fixedobserved) = "Handwashing facility observed"; var_lab(hh$mobileobserved) = "Mobile object observed"
+var_lab(hh$noplace) = "No handwashing facility observed in the dwelling, yard, or plot"
+var_lab(hh$nopermission) = "No permission to see/Other"
+var_lab(hh$numHouseholdsObs) = "Number of household members where handwashing facility was observed"
+var_lab(hh$numHHObsnoplace) = "Number of household members where handwashing facility was observed or with no handwashing facility in the dwelling, yard, or plot"
 
 
 ```
+
+
+## SFR 2.1
+
+```{r}
+
+hh$nn = 1
+
+
+row.vars = list(total(), hh$HH6, hh$HH7, hh$helevel, hh$windex5)
+
+col.vars = list(hh$sufficentwater, hh$WS8, hh$nmemnotsufficent, total())
+
+hh.weight = hh$nhhmem
+cell.vars = hh$nn
+
+
+
+taba = calc_cro_rpct(hh, hh$nn,
+               row_vars = row.vars, 
+               col_vars = list(hh$fixedobserved, hh$mobileobserved, hh$noplace, hh$nopermission, total()), 
+               weight = hh.weight, total_row_position = "none") %>% data.frame() %>% select(contains(c("100", "Total"))) %>% 
+  round(digits = 1)
+
+tabb = calc_cro_cases(hh, hh$nn, row_vars = row.vars,
+                      col_vars = total(), weight = hh.weight, total_row_position = "none") %>% 
+  data.frame() %>% select(contains("Total")) %>% round(digits = 0)
+
+
+
+tabc = calc_cro_rpct(hh, cell_vars = hh$nn,
+                      row_vars = row.vars,
+                      col_vars = list(hh$water, hh$Soap, hh$Ash),
+                      weight = hh.weight, 
+                      total_row_position = "none") %>% data.frame() %>% select(contains("100")) %>% round(digits = 1)
+
+
+tabd = calc_cro_cases(hh, cell_vars = hh$nn, row_vars = row.vars,
+                      col_vars = hh$numHouseholdsObs, weight = hh.weight,
+                      total_row_position = "none") %>% data.frame() %>% 
+  select(3) %>% round(digits = 0)
+
+
+tabe = calc_cro_rpct(hh, cell_vars = hh$nn,
+                      row_vars = row.vars,
+                      col_vars = hh$indWS7,
+                      weight = hh.weight, 
+                      total_row_position = "none") %>% data.frame() %>% select(contains("100")) %>% round(digits = 1)
+
+
+
+tabf = calc_cro_cases(hh, cell_vars = hh$nn, row_vars = row.vars,
+                      col_vars = hh$numHHObsnoplace, weight = hh.weight,
+                      total_row_position = "none") %>% data.frame() %>% 
+  select(contains("1")) %>% round(digits = 0)
+
+
+
+tab = cbind(taba, tabb, tabc, tabd, tabe, tabf)
+
+
+unweighted <- calc_cro_cases(
+    hh,
+    cell_vars = nn,
+    row_vars = row.vars,
+    col_vars = total(),
+    total_row_position = "none"
+  ) %>% data.frame() %>% select(2) %>% 
+  mutate(ind = ifelse(X.Total < 25, 1, 
+               ifelse(X.Total %in% 25:49, 2,
+                      3))) 
+
+
+
+
+
+colnames(tab) = c(label(hh$fixedobserved), label(hh$mobileobserved), label(hh$noplace), label(hh$nopermission), "Total", label(hh$nhhmem),
+                  label(hh$water), label(hh$Soap), label(hh$Ash), label(hh$numHouseholdsObs), label(hh$indWS7), label(hh$numHHObsnoplace))
+
+rownames(tab) = c("Total", levels(as_factor(hh$HH6)), levels(as_factor(hh$HH7)),
+                   levels(as_factor(hh$helevel)),
+                   levels(as_factor(hh$windex5)))
+
+
+
+
+
+for (i in 1:nrow(tab)) 
+  for (j in 1:ncol(tab)) 
+  {
+    tab[i, j] = ifelse(unweighted$ind[i] == 1, "(*)", 
+                       ifelse(unweighted$ind[i] == 2, paste0("(", tab[i,j], ")"),
+                              tab[i, j])) # else
+  }
+
+
+
+
+tab %>% 
+  kable(digits = 1, format.args = list(big.mark = ",", scientific = FALSE)) %>% 
+  kable_styling(c("striped"), font_size = 12) %>% 
+  pack_rows(label(hh$HH6), 2, 3) %>% 
+  pack_rows(label(hh$HH7), 4, 10) %>% 
+  pack_rows(label(hh$helevel), 11, 15) %>%
+  pack_rows(label(hh$windex5), 16, 20) %>% 
+  add_header_above(c(" " = 1, "Handwashing facility observed" = 2, " " = 4, "Handwashing facility observed and" = 3, " " = 3)) %>% 
+  add_header_above(c("Table WS 2.1: Handwashing facility with soap and water on premises \n
+                     Percent distribution of household members by observation of handwashing facility and percentage of household members by availability of water and soap or detergent at the handwashing facility" = 13))
+  
+
+
+
+```
+
+
+
+
+
 
 
 
@@ -1320,6 +1443,19 @@ val_lab(hh$toiletType) = make_labels("
 
 
 ```
+
+
+## SFR 3.1
+
+```{r}
+
+
+
+
+```
+
+
+
 
 
 #WS 3.2
