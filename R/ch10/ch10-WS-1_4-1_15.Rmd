@@ -1400,6 +1400,7 @@ tab %>%
 
 
 hh <- read_sav(here("Data/Tunisia_hh.sav"))
+
 hh <- hh %>% filter(HH46 == 1) %>% 
   mutate(hhweightHH48 = HH48 * hhweight) %>% mutate(nhhmem = 1 * hhweightHH48)
 
@@ -1439,15 +1440,124 @@ val_lab(hh$toiletType) = make_labels("
 
 
 
+val_lab(hh$WS11) = make_labels("    
+    11 CHASSE D’EAU: FLUSH TO PIPED SEWER SYSTEM
+    12 CHASSE D’EAU: FLUSH TO SEPTIC TANK
+    13 CHASSE D’EAU: FLUSH TO PIT LATRINE
+    14 CHASSE D’EAU: FLUSH TO OPEN DRAIN
+    18 CHASSE D’EAU: FLUSH TO DK WHERE
+    22 LATRINE A FOSSE: PIT LATRINE WITH SLAB
+    23 LATRINE A FOSSE: PIT LATRINE WITHOUT SLAB / OPEN PIT
+    95 PAS DE TOILETTES/ NATURE/CHAMPS
+    96 AUTRE
+    99 NON REPONSE"
+    )
 
 
+val_lab(hh$WS14) = make_labels("
+     1 DANS LEUR LOGEMENT
+     2 DANS LEUR JARDIN/PARCELLE
+     3 AILLEURS
+     4 Open defecation
+     9 NON REPONSE
+                               ")
 
 ```
 
 
 ## SFR 3.1
 
+
+
 ```{r}
+
+hh$nn = 1
+
+
+row.vars = list(total(), hh$HH6, hh$HH7, hh$helevel, hh$WS14, hh$windex5)
+
+# col.vars = list(hh$sufficentwater, hh$WS8, hh$nmemnotsufficent, total())
+
+hh.weight = hh$nhhmem
+cell.vars = hh$nn
+
+
+
+  taba = calc_cro_rpct(hh, hh$nn,
+                 row_vars = row.vars, 
+                 col_vars = list(hh$WS11,total()), 
+                 weight = hh.weight, total_row_position = "none") %>% data.frame() %>% 
+  select(2, 3, 4, 6, 7, 5, 8, 10, 11, 9, 12) %>% 
+  round(digits = 1)
+
+tabb = calc_cro_rpct(hh, hh$nn, row_vars = row.vars,
+                      col_vars = hh$improvepercent, weight = hh.weight, total_row_position = "none") %>% 
+  data.frame() %>% select(contains(c("Total", "100"))) %>% round(digits = 1)
+
+
+
+tabc = calc_cro_cases(hh, cell_vars = hh$nn,
+                      row_vars = row.vars,
+                      col_vars = list(total()),
+                      weight = hh.weight, 
+                      total_row_position = "none") %>% data.frame() %>% select(contains(c("Total", "100"))) %>% round(digits = 0)
+
+
+
+
+tab = cbind(taba, tabb, tabc)
+
+
+unweighted <- calc_cro_cases(
+    hh,
+    cell_vars = nn,
+    row_vars = row.vars,
+    col_vars = total(),
+    total_row_position = "none"
+  ) %>% data.frame() %>% select(2) %>% 
+  mutate(ind = ifelse(X.Total < 25, 1, 
+               ifelse(X.Total %in% 25:49, 2,
+                      3))) 
+
+
+
+
+
+colnames(tab) = c(levels(as_factor(hh$WS11))[c(2, 3, 4, 6, 7, 5, 8, 10, 11, 9) -1], "Total", label(hh$improvepercent), label(hh$nhhmem))
+
+rownames(tab) = c("Total", levels(as_factor(hh$HH6)), levels(as_factor(hh$HH7)),
+                   levels(as_factor(hh$helevel)), levels(as_factor(hh$WS14)),
+                   levels(as_factor(hh$windex5)))
+
+
+
+
+
+for (i in 1:nrow(tab)) 
+  for (j in 1:ncol(tab)) 
+  {
+    tab[i, j] = ifelse(unweighted$ind[i] == 1, "(*)", 
+                       ifelse(unweighted$ind[i] == 2, paste0("(", tab[i,j], ")"),
+                              tab[i, j])) # else
+  }
+
+
+
+
+tab %>% 
+  kable(digits = 1, format.args = list(big.mark = ",", scientific = FALSE)) %>% 
+  kable_styling(c("striped"), font_size = 12) %>% 
+  pack_rows(label(hh$HH6), 2, 3) %>% 
+  pack_rows(label(hh$HH7), 4, 10) %>% 
+  pack_rows(label(hh$helevel), 11, 15) %>%
+  pack_rows(label(hh$WS14), 16, 20) %>% 
+  pack_rows(label(hh$windex5), 21, 25) %>% 
+  add_header_above(c(" " = 1, "Improved Sanitation facility" = 5, "Unimproved Sanitation facility" = 4, " " = 4)) %>% 
+  add_header_above(c("Type of sanitation facility used by household" = 14)) %>% 
+  add_header_above(c("Table WS 3.1: Use of improved and unimproved sanitation facilities \n
+                     Percent distribution of household population according to type of sanitation facility 
+                     used by the household" = 14))
+  
 
 
 
