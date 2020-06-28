@@ -10,12 +10,10 @@ val_lab(hh$drinkingWater) = make_labels("
 
 
 
-hh <- hh %>% 
-  mutate(toiletType = case_when(
-    WS11 %in% c(11:13, 18, 21, 22, 31) ~ 1,
-    WS11 == 95 ~ 3,
-    TRUE ~ 2
-  ))
+hh = hh %>% mutate(toiletType = ifelse(WS11 %in% c(11:13, 18, 21, 22, 31), 1,
+                                       ifelse(WS11 == 95, 3, 2)))
+
+
 
 
 var_lab(hh$toiletType) = "Type of sanitation facility"
@@ -26,9 +24,10 @@ val_lab(hh$toiletType) = make_labels("
                                      ")
 
 
-hh <- hh %>% mutate(flush = NA) %>% mutate(flush = case_when(
-  WS11 %in% c(1:14, 18) ~ 1
-))
+hh = hh %>%
+  mutate(flush = ifelse(WS11 %in% c(1:14, 18), 1, NA))
+
+
 
 var_lab(hh$flush) = ""; val_lab(hh$flush) = make_labels(" 
                                                         1 Flush/Pour flush to:
@@ -36,12 +35,11 @@ var_lab(hh$flush) = ""; val_lab(hh$flush) = make_labels("
 
 
 
-hh <- hh %>% mutate(sharedToilet = case_when(
-  WS17 %in% c(1:5) ~ 1,
-  WS17 %in% 97:99 ~ 9,
-  NA ~ 0,
-  TRUE ~ 2
-))
+hh = hh %>% 
+  mutate(sharedToilet = ifelse(WS17 %in% 1:5, 1,
+                               ifelse(WS17 %in% 97:99, 9,
+                                      ifelse(is.na(WS17), 0, 2))))
+
 
 hh <- hh %>% mutate(sharedToilet = ifelse(WS16 == 2, 3, sharedToilet))
 
