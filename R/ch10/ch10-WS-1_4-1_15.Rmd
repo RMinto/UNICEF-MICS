@@ -2061,6 +2061,70 @@ hh = hh %>% mutate(connectedsewer = ifelse(WS11 == 11 | WS11 == 18, 100, 0),
 
 
 
+
+
+
+
+
+var_lab(hh$septicemptiedproviderplant) = "Removed by a service provider to treatment"
+var_lab(hh$septicemptiedproviderDK) = "Removed by a service provider to DK"
+var_lab(hh$septicemptiedpit) = "Buried in a covered pit"
+var_lab(hh$septicemptiedHHpit) = "To uncovered pit, open ground, water body or elsewhere"
+var_lab(hh$septicemptiedother) = "Other"
+
+var_lab(hh$septicemptiedDK) = "DK where wastes were taken"
+
+var_lab(hh$septicneveremptied) = "Never emptied"
+var_lab(hh$septicDKemptied) = "DK if ever emptied/Missing"
+
+var_lab(hh$Oonsiteemptiedproviderplant) = "Removed by a service provider to treatment"
+var_lab(hh$OonsiteemptiedproviderDK) =  "Removed by a service provider to DK"
+var_lab(hh$Oonsiteemptiedpit) = "Buried in a covered pit"
+var_lab(hh$OonsiteemptiedHHpit) = "To uncovered pit, open ground, water body or elsewhere"
+
+var_lab(hh$Oonsiteemptiedother) = "Other"
+var_lab(hh$OonsiteemptiedDK) = "DK where wastes were taken"
+
+var_lab(hh$Oonsiteneveremptied) = "Never emptied"
+var_lab(hh$OonsiteDKemptied) = "DK if ever emptied/Missing"
+var_lab(hh$safedisposal) = "Safe disposal in situ of excreta from on-site sanitation facilities [1]"
+var_lab(hh$unsafedisposal) = "Unsafe disposal of excreta from on-site sanitation facilities"
+var_lab(hh$treatment) = "Removal of excreta for treatment from on-site sanitation facilities"
+
+#val_lab(hh$layer1) = make_labels("
+ #                                0 Emptying and disposal of wastes from septic tanks
+  #                               ") 
+
+
+#val_lab(hh$layer2) = make_labels("
+#                                 0 Emptying and disposal of wastes from other improved on-site sanitation facilities
+#                                 ") 
+
+
+
+
+val_lab(hh$onsite) = make_labels("
+1  Flush to septic tank 
+2  Latrines and other improved
+13 Flush to pit latrine
+21 Ventilated Improved Pit Latrine (VIP)
+22 Pit latrine with slab
+31 Composting toilet                                
+                                 ")
+
+var_lab(hh$safedisposal) = "Safe disposal in situ of excreta from on-site sanitation facilities"
+var_lab(hh$unsafedisposal) = "Unsafe disposal of excreta from on-site sanitation facilities"
+var_lab(hh$treatment) = "Removal of excreta for treatment off-site [1]"
+var_lab(hh$connectedsewer) = "Connected to sewer"
+var_lab(hh$usingimproved) = "Using unimproved sanitation facilities"
+
+var_lab(hh$opendefecation) = "Practising open defecation"
+var_lab(hh$missingx) = "Missing"
+
+
+
+
+
 ```
 
 
@@ -2070,6 +2134,112 @@ hh = hh %>% mutate(connectedsewer = ifelse(WS11 == 11 | WS11 == 18, 100, 0),
 ## SFR 3.4
 
 ```{r}
+
+
+
+hh$nn = 1
+
+
+row.vars = list(total(), hh$HH6, hh$HH7, hh$helevel, hh$windex5)
+
+col.vars = list(hh$safedisposal, hh$unsafedisposal, hh$treatment, hh$connectedsewer,
+                  hh$usingimproved, hh$opendefecation, hh$missingx)
+
+hh.weight = hh$nhhmem
+cell.vars = hh$nn
+
+
+
+  taba = calc_cro_rpct(hh, hh$nn,
+                 row_vars = row.vars, 
+                 col_vars = list(
+                  hh$safedisposal, hh$unsafedisposal, hh$treatment, hh$connectedsewer,
+                  hh$usingimproved, hh$opendefecation, hh$missingx, total()
+                   ), 
+                 weight = hh.weight, total_row_position = "none") %>% 
+    data.frame() %>% select(contains(c("100", "Total"))) %>% 
+  round(digits = 1)
+
+  
+tabb = calc_cro_cases(hh, hh$nn,
+                 row_vars = row.vars, 
+                 col_vars = list(
+                   total()
+                   ), 
+                 weight = hh.weight, total_row_position = "none") %>% 
+  data.frame() %>% 
+  select(contains(c("100", "Total"))) %>% 
+  round(digits = 0)
+
+
+  
+
+
+tab = cbind(taba, tabb)
+
+
+#colnames(tab) = gsub(".", " ", colnames(tab), fixed = TRUE)
+#colnames(tab) = gsub("100", " ", colnames(tab), fixed = TRUE)
+#colnames(tab) = gsub("1", " ", colnames(tab), fixed = TRUE)
+#colnames(tab)[16] = "Total"; colnames(tab)[20] = "Number of household members in households with improved on-site sanitation facilities"
+
+
+unweighted <- calc_cro_cases(
+    hh,
+    cell_vars = nn,
+    row_vars = row.vars,
+    col_vars = total(),
+    total_row_position = "none"
+  ) %>% data.frame() %>% select(2) %>% 
+  mutate(ind = ifelse(X.Total < 25, 1, 
+               ifelse(X.Total %in% 25:49, 2,
+                      3))) 
+
+
+
+
+colnames(tab) = c(sapply(1:length(col.vars), function(i) label(col.vars[[i]])), "Total", label(hh$nhhmem))
+
+#colnames(tab) = c(label(hh$septicemptiedproviderplant), label(hh$septicemptiedproviderDK), label(hh$septicemptiedpit),
+#                  label(hh$septicemptiedHHpit), label(hh$septicemptiedother), label( hh$septicemptiedDK),
+#                  label(hh$septicneveremptied), label(hh$septicDKemptied), label(hh$Oonsiteemptiedproviderplant), )
+
+rownames(tab) = c("Total", levels(as_factor(hh$HH6)), levels(as_factor(hh$HH7)),
+                   levels(as_factor(hh$helevel)), 
+                   levels(as_factor(hh$windex5)))
+
+
+
+
+
+for (i in 1:nrow(tab)) 
+  for (j in 1:ncol(tab)) 
+  {
+    tab[i, j] = ifelse(unweighted$ind[i] == 1, "(*)", 
+                       ifelse(unweighted$ind[i] == 2, paste0("(", tab[i,j], ")"),
+                              tab[i, j])) # else
+  }
+
+
+
+
+
+
+tab %>% 
+  kable(digits = 1, format.args = list(big.mark = ",", scientific = FALSE)) %>% 
+  kable_styling(c("striped"), font_size = 12) %>% 
+  pack_rows(label(hh$HH6), 2, 3) %>% 
+  pack_rows(label(hh$HH7), 4, 10) %>% 
+  pack_rows(label(hh$helevel), 11, 15) %>%
+  pack_rows(label(hh$windex5), 16, 20) %>% 
+  add_header_above(c(" " = 1, "Using improved on-site sanitation systems" = 3, " " = 6)) %>%  
+  add_header_above(c("Table WS 3.4: Management of excreta from household sanitation facilities \n
+                     Percent distribution of household population by management of excreta from household sanitation facilities" = 10))
+  
+
+
+
+
 
 
 
