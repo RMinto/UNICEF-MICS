@@ -2268,8 +2268,147 @@ hh = hh %>% mutate(stools = ifelse(CA31 %in% 1:2, 100, 0),
                    disposalplace = ifelse(CA31 == 98, 99, CA31))
 
 
+var_lab(hh$stools) =  "Percentage of children whose last stools were disposed of safely [A]"
+var_lab(hh$disposalplace) =  "Place of disposal of child's faeces"
+val_lab(hh$disposalplace) = make_labels("
+                                        1 Child used toilet / latrine
+                                        2 Put / rinsed into toilet or latrine
+                                        3 Put / rinsed into drain or ditch
+                                        4 Thrown into garbage (solid waste)
+                                        5 Buried
+                                        6 Left in the open
+                                        96 Other
+                                        99 DK/Missing
+                                        ")
+
+
+hh$numChildren = 1
+var_lab(hh$numChildren) = "Number of children age 0-2 years"
+
 
 ```
+
+
+## SFR 3.5
+
+```{r}
+
+
+
+hh$nn = 1
+
+
+row.vars = list(total(), hh$HH6.x, hh$HH7.x, hh$melevel, hh$toiletType, hh$windex5.x)
+
+# col.vars = list(hh$disposalplace, "total", hh$stools, hh$nn)
+
+hh.weight = hh$chweight
+cell.vars = hh$numChildren
+
+
+
+taba = calc_cro_rpct(
+  hh, 
+  cell_vars = hh$nn, 
+  row_vars = row.vars, 
+  col_vars = list(
+    hh$disposalplace, total(), hh$stools
+    
+  ),
+  weight = hh.weight,
+  total_row_position = "none"
+) %>% data.frame() %>% select(-c(1,8)) %>% round(digits = 1)
+
+
+tabb = calc_cro_cases(
+  hh, 
+  cell_vars = hh$nn, 
+  row_vars = row.vars, 
+  col_vars = list(
+    total()
+    
+  ),
+  weight = hh.weight,
+  total_row_position = "none"
+) %>% data.frame() %>% select(contains(c("100", "Total"))) %>% round(digits = 0)
+
+
+
+  
+  
+  
+
+
+tab = cbind(taba, tabb)
+
+
+#colnames(tab) = gsub(".", " ", colnames(tab), fixed = TRUE)
+#colnames(tab) = gsub("100", " ", colnames(tab), fixed = TRUE)
+#colnames(tab) = gsub("1", " ", colnames(tab), fixed = TRUE)
+#colnames(tab)[16] = "Total"; colnames(tab)[20] = "Number of household members in households with improved on-site sanitation facilities"
+
+
+unweighted <- calc_cro_cases(
+    hh,
+    cell_vars = numChildren,
+    row_vars = row.vars,
+    col_vars = total(),
+    total_row_position = "none"
+  ) %>% data.frame() %>% select(2) %>% 
+  mutate(ind = ifelse(X.Total < 25, 1, 
+               ifelse(X.Total %in% 25:49, 2,
+                      3))) 
+
+
+
+
+# colnames(tab) = c(sapply(1:length(col.vars), function(i) label(col.vars[[i]])), "Total", label(hh$nhhmem))
+
+#colnames(tab) = c(label(hh$septicemptiedproviderplant), label(hh$septicemptiedproviderDK), label(hh$septicemptiedpit),
+#                  label(hh$septicemptiedHHpit), label(hh$septicemptiedother), label( hh$septicemptiedDK),
+#                  label(hh$septicneveremptied), label(hh$septicDKemptied), label(hh$Oonsiteemptiedproviderplant), )
+
+rownames(tab) = c("Total", levels(as_factor(hh$HH6.x)), levels(as_factor(hh$HH7.x)),
+                   levels(as_factor(hh$melevel)), levels(as_factor(hh$toiletType)),
+                   levels(as_factor(hh$windex5.x)))
+
+
+
+colnames(tab) = c(levels(as_factor(hh$disposalplace)), "Total", label(hh$stools), label(hh$numChildren))
+
+
+
+for (i in 1:nrow(tab)) 
+  for (j in 1:ncol(tab)) 
+  {
+    tab[i, j] = ifelse(unweighted$ind[i] == 1, "(*)", 
+                       ifelse(unweighted$ind[i] == 2, paste0("(", tab[i,j], ")"),
+                              tab[i, j])) # else
+  }
+
+
+
+
+
+
+tab %>% 
+  kable(digits = 1, format.args = list(big.mark = ",", scientific = FALSE)) %>% 
+  kable_styling(c("striped"), font_size = 12) %>% 
+  pack_rows(label(hh$HH6.x), 2, 3) %>% 
+  pack_rows(label(hh$HH7.x), 4, 10) %>% 
+  pack_rows(label(hh$melevel), 11, 15) %>%
+  pack_rows(label(hh$toiletType), 16, 18) %>% 
+  pack_rows(label(hh$windex5.x), 19, 23) %>% 
+  add_header_above(c(" " = 1, "Place of disposal of child's faeces" = 8, " " = 3)) %>%  
+  add_header_above(c("Table WS 3.5: Disposal of child's faeces \n
+                     Percent distribution of children age 0-2 years according to place of disposal of child's faeces, and the percentage of children age 
+                     0-2 years whose stools were disposed of safely the last time the child passed stools" = 12))
+  
+
+
+
+```
+
 
 
 
